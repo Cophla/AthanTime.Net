@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>Athan Time</string>
+  <key>CFBundleDisplayName</key><string>Athan Time @VERSION@</string>
+  <key>CFBundleIdentifier</key><string>org.athantime.desktop</string>
+  <key>CFBundleExecutable</key><string>AthanTime.Net</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>@NUMERIC_VERSION@</string>
+  <key>CFBundleVersion</key><string>@NUMERIC_VERSION@</string>
+  <key>CFBundleGetInfoString</key><string>Athan Time @VERSION@</string>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>

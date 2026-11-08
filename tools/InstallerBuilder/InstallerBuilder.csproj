@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>Builds offline self-contained Athan Time packages: Windows setup with user or machine scope, Linux DEB, macOS DMG and per-platform portable archives.</Description>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,27 @@
+root = true
+
+[*.{cs,ps1,cmd,bat,sh,command,md,json,xml,axaml,csproj,props,targets,yml,yaml,nsi,template,config}]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+[*.{cs,ps1,cmd,bat}]
+end_of_line = crlf
+
+[*.cs]
+# Private fields use _privateCase; protected fields use _PrivateCase.
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.private_field_style.required_prefix = _
+dotnet_naming_style.private_field_style.capitalization = camel_case
+dotnet_naming_rule.private_fields.severity = warning
+dotnet_naming_rule.private_fields.symbols = private_fields
+dotnet_naming_rule.private_fields.style = private_field_style
+
+dotnet_naming_symbols.protected_fields.applicable_kinds = field
+dotnet_naming_symbols.protected_fields.applicable_accessibilities = protected, protected_internal
+dotnet_naming_style.protected_field_style.required_prefix = _
+dotnet_naming_style.protected_field_style.capitalization = pascal_case
+dotnet_naming_rule.protected_fields.severity = warning
+dotnet_naming_rule.protected_fields.symbols = protected_fields
+dotnet_naming_rule.protected_fields.style = protected_field_style

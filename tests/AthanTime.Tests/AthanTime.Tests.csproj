@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Content Include="../../Create-Installers.*" Link="LauncherFiles/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../packaging/windows/build-installer.ps1" Link="RecipeFiles/build-installer.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../packaging/windows/AthanTime.nsi" Link="RecipeFiles/AthanTime.nsi" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../packaging/windows/Sign-Code.ps1" Link="RecipeFiles/Sign-Code.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../packaging/build-portable.ps1" Link="RecipeFiles/build-portable.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../packaging/**/*.sh;../../packaging/**/*.template;../../packaging/**/*.desktop" Link="ShellRecipes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../AthanTime.Net/Data/locations.json.br" Link="ReferenceData/locations.json.br" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../AthanTime.Net/Data/locations.db.zip" Link="ReferenceData/locations.db.zip" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../tools/LocationDataBuilder/LocationCatalog.targets" Link="ReferenceData/LocationCatalog.targets" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../AthanTime.Net/Assets/athan-icon*.*" Link="ReferenceData/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <PackageReference Include="xunit.v3" Version="4.0.1" />
+    <PackageReference Include="Xunit.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="Avalonia.Headless" Version="12.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SingleInstanceProbe/SingleInstanceProbe.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\AthanTime.Net\AthanTime.Net.csproj" />
+    <ProjectReference Include="..\..\tools\InstallerBuilder\InstallerBuilder.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopySingleInstanceProbe" AfterTargets="Build">
+    <ItemGroup>
+      <ProbeFiles Include="../SingleInstanceProbe/bin/$(Configuration)/$(TargetFramework)/SingleInstanceProbe.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ProbeFiles)" DestinationFolder="$(TargetDir)SingleInstanceProbe" />
+  </Target>
+</Project>

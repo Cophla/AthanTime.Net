@@ -1,0 +1,34 @@
+{
+  "entries": [
+    {
+      "id": "morning-praise", "period": "morning", "source": "Sahih Muslim 2692",
+      "arabic": "سُبْحَانَ اللهِ وَبِحَمْدِهِ",
+      "meanings": { "en": "Glory and praise be to Allah (100 times in the morning).", "ar": "تسبيح الله وحمده (مئة مرة صباحًا).", "fr": "Gloire et louange à Allah (100 fois le matin).", "es": "Gloria y alabanza a Alá (100 veces por la mañana).", "tr": "Allah'ı tesbih eder ve O'na hamd ederim (sabah 100 kez).", "de": "Gepriesen und gelobt sei Allah (morgens 100-mal).", "id": "Mahasuci Allah dan segala puji bagi-Nya (100 kali pagi hari).", "ur": "اللہ پاک ہے اور اسی کی حمد ہے (صبح ۱۰۰ مرتبہ)۔" }
+    },
+    {
+      "id": "evening-praise", "period": "evening", "source": "Sahih Muslim 2692",
+      "arabic": "سُبْحَانَ اللهِ وَبِحَمْدِهِ",
+      "meanings": { "en": "Glory and praise be to Allah (100 times in the evening).", "ar": "تسبيح الله وحمده (مئة مرة مساءً).", "fr": "Gloire et louange à Allah (100 fois le soir).", "es": "Gloria y alabanza a Alá (100 veces por la tarde).", "tr": "Allah'ı tesbih eder ve O'na hamd ederim (akşam 100 kez).", "de": "Gepriesen und gelobt sei Allah (abends 100-mal).", "id": "Mahasuci Allah dan segala puji bagi-Nya (100 kali petang hari).", "ur": "اللہ پاک ہے اور اسی کی حمد ہے (شام ۱۰۰ مرتبہ)۔" }
+    },
+    {
+      "id": "tahlil", "period": "any", "source": "Sahih al-Bukhari 6403",
+      "arabic": "لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
+      "meanings": { "en": "None has the right to be worshipped but Allah alone. His is the dominion and praise; He has power over all things.", "ar": "لا معبود بحق إلا الله وحده؛ له الملك والحمد وهو على كل شيء قدير.", "fr": "Nul ne mérite l'adoration sauf Allah seul. À Lui la royauté et la louange ; Il est capable de toute chose.", "es": "Nadie merece adoración sino Alá solo. Suyos son el reino y la alabanza; Él tiene poder sobre todo.", "tr": "Allah'tan başka ibadete layık ilah yoktur. Mülk ve hamd O'nundur; O'nun her şeye gücü yeter.", "de": "Niemand ist der Anbetung würdig außer Allah allein. Ihm gehören Herrschaft und Lob; Er hat Macht über alles.", "id": "Tiada yang berhak disembah selain Allah semata. Milik-Nya kerajaan dan pujian; Dia Mahakuasa atas segala sesuatu.", "ur": "اللہ کے سوا کوئی عبادت کے لائق نہیں۔ بادشاہی اور حمد اسی کی ہے، اور وہ ہر چیز پر قادر ہے۔" }
+    },
+    {
+      "id": "tasbih", "period": "any", "source": "Sahih Muslim 597",
+      "arabic": "سُبْحَانَ اللهِ",
+      "meanings": { "en": "Glory be to Allah.", "ar": "الله منزّه عن كل نقص.", "fr": "Gloire à Allah.", "es": "Gloria a Alá.", "tr": "Allah'ı tesbih ederim.", "de": "Gepriesen sei Allah.", "id": "Mahasuci Allah.", "ur": "اللہ پاک ہے۔" }
+    },
+    {
+      "id": "tahmid", "period": "any", "source": "Sahih Muslim 597",
+      "arabic": "الْحَمْدُ لِلَّهِ",
+      "meanings": { "en": "All praise is for Allah.", "ar": "كل الحمد لله.", "fr": "Toute louange revient à Allah.", "es": "Toda alabanza es para Alá.", "tr": "Hamd Allah'a mahsustur.", "de": "Alles Lob gebührt Allah.", "id": "Segala puji bagi Allah.", "ur": "تمام تعریف اللہ کے لیے ہے۔" }
+    },
+    {
+      "id": "takbir", "period": "any", "source": "Sahih Muslim 597",
+      "arabic": "اللهُ أَكْبَرُ",
+      "meanings": { "en": "Allah is the greatest.", "ar": "الله أعظم من كل شيء.", "fr": "Allah est le plus grand.", "es": "Alá es el más grande.", "tr": "Allah en büyüktür.", "de": "Allah ist der Größte.", "id": "Allah Maha Besar.", "ur": "اللہ سب سے بڑا ہے۔" }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Athan Time @VERSION@
+Comment=Offline prayer times, Athan and optional sunrise reminders
+Exec=athan-time
+Icon=athan-time
+Terminal=false
+Categories=Utility;

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <title>Athan Time small desktop icon</title>
+  <!-- Solid minaret: tiny windows and finial become broken pixels at tray/title-bar size. -->
+  <path fill="#79D8B4" stroke="#123D30" stroke-width="0.25" stroke-linejoin="round" fill-rule="evenodd"
+        d="M 16,2
+           C 8,2 2,8 2,16
+           C 2,24 8,30 16,30
+           C 23.5,30 29.5,24.5 30.5,17
+           C 28,22.4 24.2,25.7 20,26.5
+           V 18 H 21 V 16.5 H 20 V 12
+           C 21.25,10 18.5,8.8 18,7
+           C 17.5,8.8 14.75,10 16,12
+           V 16.5 H 15 V 18 H 16 V 26.5
+           C 10.6,25.5 7,21 7,15.5
+           C 7,9.25 10.5,4.25 16,2 Z" />
+</svg>

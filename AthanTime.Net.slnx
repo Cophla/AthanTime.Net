@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="AthanTime.Net/AthanTime.Net.csproj" />
+  <Project Path="tools/InstallerBuilder/InstallerBuilder.csproj" />
+  <Project Path="tools/IconBuilder/IconBuilder.csproj" />
+  <Project Path="tests/AthanTime.Tests/AthanTime.Tests.csproj" />
+  <Project Path="tests/SingleInstanceProbe/SingleInstanceProbe.csproj" />
+</Solution>

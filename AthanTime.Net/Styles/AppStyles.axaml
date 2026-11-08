@@ -1,0 +1,155 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="AppBackgroundBrush">#F4F7F5</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBrush">#FFFFFF</SolidColorBrush>
+          <SolidColorBrush x:Key="TextBrush">#18342A</SolidColorBrush>
+          <SolidColorBrush x:Key="MutedTextBrush">#668077</SolidColorBrush>
+          <SolidColorBrush x:Key="HeaderBrush">#123D30</SolidColorBrush>
+          <SolidColorBrush x:Key="HeaderMutedBrush">#BFD5CC</SolidColorBrush>
+          <SolidColorBrush x:Key="NavBrush">#E7EFEA</SolidColorBrush>
+          <SolidColorBrush x:Key="NavTextBrush">#194D3A</SolidColorBrush>
+          <SolidColorBrush x:Key="TabBorderBrush">#668077</SolidColorBrush>
+          <SolidColorBrush x:Key="TabHoverBrush">#D5E5DD</SolidColorBrush>
+          <SolidColorBrush x:Key="TabSelectedBrush">#1B5944</SolidColorBrush>
+          <SolidColorBrush x:Key="TabSelectedTextBrush">#FFFFFF</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBrush">#F2F7F4</SolidColorBrush>
+          <SolidColorBrush x:Key="BadgeBrush">#E8F4EE</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentTextBrush">#287A5C</SolidColorBrush>
+          <SolidColorBrush x:Key="ErrorTextBrush">#B3261E</SolidColorBrush>
+          <StaticResource x:Key="ButtonBackground" ResourceKey="NavBrush" />
+          <StaticResource x:Key="ButtonForeground" ResourceKey="NavTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrush" ResourceKey="TabBorderBrush" />
+          <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="TabHoverBrush" />
+          <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="NavTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="AccentTextBrush" />
+          <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="TabSelectedBrush" />
+          <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="TabSelectedTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="TabSelectedBrush" />
+          <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="PanelBrush" />
+          <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="MutedTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="TabBorderBrush" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="AppBackgroundBrush">#101815</SolidColorBrush>
+          <SolidColorBrush x:Key="CardBrush">#1B2723</SolidColorBrush>
+          <SolidColorBrush x:Key="TextBrush">#ECF5F1</SolidColorBrush>
+          <SolidColorBrush x:Key="MutedTextBrush">#A7BCB4</SolidColorBrush>
+          <SolidColorBrush x:Key="HeaderBrush">#0B2E24</SolidColorBrush>
+          <SolidColorBrush x:Key="HeaderMutedBrush">#BDD4CB</SolidColorBrush>
+          <SolidColorBrush x:Key="NavBrush">#29443A</SolidColorBrush>
+          <SolidColorBrush x:Key="NavTextBrush">#F0F8F5</SolidColorBrush>
+          <SolidColorBrush x:Key="TabBorderBrush">#8BA89D</SolidColorBrush>
+          <SolidColorBrush x:Key="TabHoverBrush">#354C42</SolidColorBrush>
+          <SolidColorBrush x:Key="TabSelectedBrush">#79D8B4</SolidColorBrush>
+          <SolidColorBrush x:Key="TabSelectedTextBrush">#0B2E24</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelBrush">#24332E</SolidColorBrush>
+          <SolidColorBrush x:Key="BadgeBrush">#24483B</SolidColorBrush>
+          <SolidColorBrush x:Key="AccentTextBrush">#79D8B4</SolidColorBrush>
+          <SolidColorBrush x:Key="ErrorTextBrush">#FFB4AB</SolidColorBrush>
+          <StaticResource x:Key="ButtonBackground" ResourceKey="NavBrush" />
+          <StaticResource x:Key="ButtonForeground" ResourceKey="NavTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrush" ResourceKey="TabBorderBrush" />
+          <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="TabHoverBrush" />
+          <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="NavTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="AccentTextBrush" />
+          <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="TabSelectedBrush" />
+          <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="TabSelectedTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="TabSelectedBrush" />
+          <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="PanelBrush" />
+          <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="MutedTextBrush" />
+          <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="TabBorderBrush" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Styles.Resources>
+  <Style Selector=":is(Window)">
+    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="FontFamily" Value="Inter, Noto Sans Arabic, Segoe UI" />
+  </Style>
+<Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="Inter, Noto Sans Arabic, Segoe UI" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="20" />
+      <Setter Property="BoxShadow" Value="0 5 20 0 #120B251B" />
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.nav">
+      <Setter Property="Background" Value="{DynamicResource NavBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource NavTextBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.location">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="10" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForeground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <!-- The rounded focus border below replaces the default rectangular adorner. -->
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="Padding" Value="14,9" />
+    </Style>
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter TextBlock">
+      <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentPresenter}}" />
+    </Style>
+    <Style Selector="Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentTextBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="MinHeight" Value="38" />
+    </Style>
+    <Style Selector="ComboBox, TextBox, NumericUpDown">
+      <Setter Property="MinHeight" Value="42" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="FontSize" Value="15" />
+    </Style>
+    <Style Selector="NumericUpDown">
+      <Setter Property="ShowButtonSpinner" Value="False" />
+      <Setter Property="FlowDirection" Value="LeftToRight" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="MinWidth" Value="100" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="FontSize" Value="18" />
+    </Style>
+    <Style Selector="ComboBox, AutoCompleteBox">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="ContentTemplate">
+        <DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Expander">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+</Styles>

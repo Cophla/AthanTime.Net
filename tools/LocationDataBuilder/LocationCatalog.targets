@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <LocationCatalogArchive Condition="'$(LocationCatalogArchive)' == ''">$(MSBuildThisFileDirectory)../../AthanTime.Net/Data/locations.db.zip</LocationCatalogArchive>
+  </PropertyGroup>
+
+  <!-- Each configuration/RID owns its extraction; ordinary incremental builds do no catalog work. -->
+  <Target Name="PrepareLocationCatalog" Inputs="$(LocationCatalogArchive)"
+          Outputs="$(IntermediateOutputPath)location-catalog/locations.db">
+    <Error Condition="!Exists('$(LocationCatalogArchive)')" Text="Missing offline catalog archive: $(LocationCatalogArchive)" />
+    <Unzip SourceFiles="$(LocationCatalogArchive)" DestinationFolder="$(IntermediateOutputPath)location-catalog"
+           SkipUnchangedFiles="false" />
+    <Error Condition="!Exists('$(IntermediateOutputPath)location-catalog/locations.db')"
+           Text="The offline catalog archive must contain locations.db." />
+    <!-- ZIP entries have reproducible timestamps; use extraction time for MSBuild input/output checks. -->
+    <Touch Files="$(IntermediateOutputPath)location-catalog/locations.db" />
+  </Target>
+
+  <Target Name="IncludeLocationCatalog" BeforeTargets="AssignTargetPaths" DependsOnTargets="PrepareLocationCatalog">
+    <ItemGroup>
+      <Content Include="$(IntermediateOutputPath)location-catalog/locations.db" Link="Data/locations.db"
+               CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <FileWrites Include="$(IntermediateOutputPath)location-catalog/locations.db" />
+    </ItemGroup>
+  </Target>
+</Project>

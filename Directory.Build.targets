@@ -1,0 +1,7 @@
+<Project>
+  <!-- Optional local/release signing; certificate keys stay in the Windows certificate store. -->
+  <Target Name="SignWindowsBuildOutputs" AfterTargets="Build"
+          Condition="'$(OS)' == 'Windows_NT' and '$(IsCrossTargetingBuild)' != 'true' and ('$(RuntimeIdentifier)' == '' or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-', System.StringComparison.OrdinalIgnoreCase))) and ('$(ATHAN_SIGNING_CERTIFICATE_THUMBPRINT)' != '' or '$(ATHAN_REQUIRE_SIGNING)' == '1')">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)packaging\windows\Sign-Code.ps1&quot; -Path &quot;$(TargetDir).&quot;" />
+  </Target>
+</Project>

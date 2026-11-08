@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>AthanTime.Net</RootNamespace>
+    <OutputType>WinExe</OutputType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Description>Offline Athan and five-prayer times for Windows, macOS and Linux, with separate sunrise reminders, eight languages, bounded on-demand SQLite location search, remembered window position, one Release instance per OS user with repeat-launch window activation, and concurrent Debug development runs. Release $(Version).</Description>
+    <Product>Athan Time $(Version)</Product>
+    <ApplicationIcon>Assets\athan-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <PackageReference Include="Adhan" Version="0.9.0" />
+    <PackageReference Include="SoundFlow" Version="1.4.1" GeneratePathProperty="true" />
+    <PackageReference Include="NVorbis" Version="0.10.5" GeneratePathProperty="true" />
+    <PackageReference Include="NodaTime" Version="3.3.5" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\athan-icon-desktop.png" />
+    <AvaloniaResource Include="Assets\athan-icon.ico" />
+    <Content Include="Assets\Audio\*.ogg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\athan-icon.ico" />
+    <None Update="Data\GEONAMES-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Data\prayer-conventions.json" />
+    <EmbeddedResource Include="Data\default-settings.json" />
+    <EmbeddedResource Include="Data\default-adhkar.json" />
+    <EmbeddedResource Include="Data\ui-text.json" />
+    <None Update="appsettings*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\THIRD-PARTY-NOTICES.md" Link="licenses\ATHAN-THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(PkgSoundFlow)\LICENSE.md" Link="licenses\SOUNDFLOW-LICENSE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(PkgNVorbis)\LICENSE" Link="licenses\NVORBIS-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="licenses\NODATIME-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="licenses\SQLITE-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(PkgSoundFlow)\SOUNDFLOW-THIRD-PARTY-NOTICES.txt" Link="licenses\SOUNDFLOW-THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!-- Unpack the versioned prebuilt catalog at build time, never in application startup. -->
+  <Import Project="../tools/LocationDataBuilder/LocationCatalog.targets" />
+  <!-- Fail packaging if offline data, decoders or RID-specific native backends are missing. -->
+  <Target Name="VerifyAudioPublish" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' != ''">
+    <PropertyGroup>
+      <AudioNative Condition="'$(RuntimeIdentifier)' == 'win-x64'">miniaudio.dll</AudioNative>
+      <AudioNative Condition="'$(RuntimeIdentifier)' == 'linux-x64' Or '$(RuntimeIdentifier)' == 'linux-arm64'">libminiaudio.so</AudioNative>
+      <AudioNative Condition="'$(RuntimeIdentifier)' == 'osx-x64' Or '$(RuntimeIdentifier)' == 'osx-arm64'">libminiaudio.dylib</AudioNative>
+      <SqliteNative Condition="'$(RuntimeIdentifier)' == 'win-x64'">e_sqlite3.dll</SqliteNative>
+      <SqliteNative Condition="'$(RuntimeIdentifier)' == 'linux-x64' Or '$(RuntimeIdentifier)' == 'linux-arm64'">libe_sqlite3.so</SqliteNative>
+      <SqliteNative Condition="'$(RuntimeIdentifier)' == 'osx-x64' Or '$(RuntimeIdentifier)' == 'osx-arm64'">libe_sqlite3.dylib</SqliteNative>
+    </PropertyGroup>
+    <ItemGroup>
+      <RequiredAudio Include="$(PublishDir)Assets/Audio/adhan.ogg;$(PublishDir)Assets/Audio/takbeer.ogg;$(PublishDir)Assets/Audio/alhamdulillah.ogg;$(PublishDir)NVorbis.dll" />
+      <RequiredAudio Include="$(PublishDir)$(AudioNative)" Condition="'$(AudioNative)' != ''" />
+      <RequiredAudio Include="$(PublishDir)Data/locations.db;$(PublishDir)Microsoft.Data.Sqlite.dll" />
+      <RequiredAudio Include="$(PublishDir)$(SqliteNative)" Condition="'$(SqliteNative)' != ''" />
+      <ObsoleteAudio Include="$(PublishDir)**/*.mp3" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(RequiredAudio.Identity)')" Text="Missing offline deployment file: %(RequiredAudio.Identity)" />
+    <Error Condition="'@(ObsoleteAudio)' != ''" Text="Publish directory contains obsolete MP3 files; use a clean staging directory." />
+  </Target>
+</Project>

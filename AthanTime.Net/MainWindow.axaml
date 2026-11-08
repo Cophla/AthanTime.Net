@@ -1,0 +1,523 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1180" d:DesignHeight="760"
+        x:Class="AthanTime.Net.MainWindow" x:CompileBindings="False"
+        Title="{Binding AppName}"
+        Width="1180" Height="800" MinWidth="980" MinHeight="600" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}" FlowDirection="{Binding FlowDirection}"
+        RequestedThemeVariant="{Binding SelectedTheme}"
+        Closing="OnClosing">
+  <Window.Resources>
+    <ResourceDictionary>
+      <DataTemplate x:Key="SummerRuleTemplate">
+        <StackPanel Spacing="8" Margin="0,8">
+          <TextBlock Name="RuleMonthLabel" Text="{Binding [SummerMonth]}" Classes="caption" />
+          <ComboBox Name="RuleMonthInput" ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Name="RuleChooseDayLabel" Text="{Binding [SummerChooseDay]}" Classes="caption" />
+          <ComboBox Name="RuleKindInput" ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <StackPanel Spacing="8" IsVisible="{Binding IsWeekday}">
+            <TextBlock Text="{Binding [SummerWeekOccurrence]}" Classes="caption" />
+            <ComboBox Name="RuleOccurrenceInput" ItemsSource="{Binding Occurrences}" SelectedItem="{Binding SelectedOccurrence}" HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="{Binding [SummerWeekday]}" Classes="caption" />
+            <ComboBox Name="RuleWeekdayInput" ItemsSource="{Binding Weekdays}" SelectedItem="{Binding SelectedWeekday}" HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Spacing="8" IsVisible="{Binding IsCalendarDay}">
+            <TextBlock Text="{Binding [SummerDayOfMonth]}" Classes="caption" />
+            <NumericUpDown Name="RuleDayInput" Minimum="1" Maximum="31" Value="{Binding Day}" />
+          </StackPanel>
+          <TextBlock Text="{Binding [SummerLocalTime]}" Classes="caption" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding [SummerHour]}" />
+              <NumericUpDown Name="RuleHourInput" Minimum="0" Maximum="23" FormatString="00" Value="{Binding Hour}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="{Binding [SummerMinute]}" />
+              <NumericUpDown Name="RuleMinuteInput" Minimum="0" Maximum="59" FormatString="00" Value="{Binding Minute}" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </DataTemplate>
+      <!-- Native tabs keep keyboard/RTL behavior; the shared surface makes navigation unmistakable. -->
+      <ControlTheme x:Key="SectionTabTheme" TargetType="TabItem">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="MinWidth" Value="120" />
+        <Setter Property="Padding" Value="16,9" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="Background" Value="{DynamicResource NavBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource NavTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TabBorderBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+          <ControlTemplate>
+            <Border Name="PART_TabSurface" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+              <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Header}"
+                                ContentTemplate="{TemplateBinding HeaderTemplate}" RecognizesAccessKey="True"
+                                Foreground="{TemplateBinding Foreground}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </Border>
+          </ControlTemplate>
+        </Setter>
+        <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter TextBlock">
+          <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TabItem}}" />
+        </Style>
+        <Style Selector="^:selected">
+          <Setter Property="Background" Value="{DynamicResource TabSelectedBrush}" />
+          <Setter Property="Foreground" Value="{DynamicResource TabSelectedTextBrush}" />
+          <Setter Property="BorderBrush" Value="{DynamicResource TabSelectedBrush}" />
+        </Style>
+        <Style Selector="^:pointerover:not(:selected)">
+          <Setter Property="Background" Value="{DynamicResource TabHoverBrush}" />
+        </Style>
+        <Style Selector="^:pressed">
+          <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="^:focus-visible">
+          <Setter Property="BorderBrush" Value="#D7A948" />
+        </Style>
+        <Style Selector="^:disabled">
+          <Setter Property="Opacity" Value="0.45" />
+        </Style>
+      </ControlTheme>
+
+    </ResourceDictionary>
+  </Window.Resources>
+
+
+  <Grid RowDefinitions="Auto,Auto,*">
+    <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}" Padding="28,18">
+      <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+          <Border Width="44" Height="44" CornerRadius="22" Background="#DBA84B">
+            <TextBlock Text="☾" FontSize="30" Foreground="#123D30" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Name="ApplicationName" Text="{Binding AppName}" FontSize="22" FontWeight="Bold" Foreground="White" />
+            <TextBlock Text="{Binding Tagline}" FontSize="12" Foreground="{DynamicResource HeaderMutedBrush}" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+          <StackPanel HorizontalAlignment="Right">
+            <TextBlock Text="{Binding LocationName}" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Right" />
+            <TextBlock Text="{Binding CurrentClock}" Foreground="{DynamicResource HeaderMutedBrush}" FontSize="12" HorizontalAlignment="Right" />
+          </StackPanel>
+          <ComboBox Width="155" ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}">
+            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding NativeName}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1" Background="{DynamicResource CardBrush}" Padding="16,8">
+      <StackPanel Spacing="4">
+      <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
+        <Button Classes="nav" Content="{Binding PauseButtonLabel}" Click="OnToggleNotificationsPause" Margin="4" />
+        <CheckBox Content="{Binding NotificationsLabel}" IsChecked="{Binding NotificationsEnabled}" Margin="8,4" VerticalAlignment="Center" />
+        <Button Classes="nav" Content="{Binding [PlayBundledAthan]}" Click="OnPlayBundledAthan" Margin="4" />
+        <Button Classes="nav" Content="{Binding [StopAudio]}" Click="OnStopAudio" Margin="4" />
+      </WrapPanel>
+        <TextBlock Name="SettingsStatusBanner" Text="{Binding SettingsStatus}" IsVisible="{Binding HasSettingsStatus}" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="{DynamicResource AccentTextBrush}" />
+      </StackPanel>
+    </Border>
+
+    <TabControl Name="MainPages" Grid.Row="2" ItemContainerTheme="{StaticResource SectionTabTheme}">
+      <TabItem Header="{Binding TodayLabel}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="20" Spacing="18" MaxWidth="1000" HorizontalAlignment="Stretch">
+          <Border Classes="card" Background="#1B5944" Padding="26">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+              <StackPanel>
+                <TextBlock Text="{Binding NextPrayerLabel}" Foreground="#BFD9CF" FontSize="13" />
+                <TextBlock Text="{Binding NextPrayerName}" Foreground="White" FontSize="30" FontWeight="Bold" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                <TextBlock Text="{Binding NextPrayerTime}" Foreground="White" FontSize="30" FontWeight="Bold" HorizontalAlignment="Right" />
+                <TextBlock Text="{Binding Countdown}" Foreground="#E7C782" FontSize="13" HorizontalAlignment="Right" />
+              </StackPanel>
+              <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Value="{Binding DayProgress}" Maximum="100" Height="5" Margin="0,20,0,18" Foreground="#E2B95F" Background="#477765" />
+              <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+                <StackPanel>
+                  <TextBlock Text="{Binding DisplayDate}" Foreground="#D5E4DE" />
+                  <TextBlock Text="{Binding HijriDate}" Foreground="#9FC0B3" FontSize="12" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="nav" Content="‹" Click="OnPreviousDay" ToolTip.Tip="{Binding PreviousLabel}" />
+                <Button Grid.Column="2" Classes="nav" Content="›" Click="OnNextDay" ToolTip.Tip="{Binding NextLabel}" />
+              </Grid>
+            </Grid>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel Spacing="14">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="section" Text="{Binding TodayLabel}" />
+                <Button Grid.Column="1" Classes="nav" Content="{Binding TodayLabel}" Click="OnToday" />
+              </Grid>
+              <ItemsControl Name="TodayPrayerRows" ItemsSource="{Binding PrayerRows}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Margin="5" Padding="16" CornerRadius="14" Background="{DynamicResource PanelBrush}">
+                      <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                        <Border Width="8" Height="8" CornerRadius="4" Background="#D7A948" Opacity="{Binding Emphasis}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Time}" FontSize="24" FontWeight="Bold" Margin="0,10,0,0" />
+                        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Grid ColumnDefinitions="*,18,*">
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="caption" Text="{Binding QiblaLabel}" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <TextBlock Text="⌖" FontSize="28" Foreground="#B78B36" />
+                  <TextBlock Text="{Binding QiblaValue}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="caption" Text="{Binding MidnightLabel}" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <TextBlock Text="☾" FontSize="28" Foreground="#526C94" />
+                  <TextBlock Text="{Binding MidnightValue}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="{Binding SettingsLabel}">
+        <TabControl Name="SettingsPages" ItemContainerTheme="{StaticResource SectionTabTheme}">
+          <TabItem Header="{Binding [Location]}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Margin="20" Spacing="18" MaxWidth="700" HorizontalAlignment="Stretch">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="section" Text="{Binding LocationLabel}" />
+                <Border Grid.Column="1" CornerRadius="8" Padding="8,4" Background="{DynamicResource BadgeBrush}">
+                  <TextBlock Classes="caption" Text="{Binding OfflineLabel}" Foreground="{DynamicResource AccentTextBrush}" />
+                </Border>
+              </Grid>
+              <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{Binding SearchPlaceLabel}" />
+              <ScrollViewer MaxHeight="240"><ItemsControl ItemsSource="{Binding SearchResults}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="location" Click="OnLocationClicked">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="›" FontSize="22" Foreground="{DynamicResource AccentTextBrush}" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl></ScrollViewer>
+              <TextBlock Text="{Binding NoResultsLabel}" IsVisible="{Binding ShowNoResults}" FontSize="12" Foreground="#8C6254" />
+              <Expander Header="{Binding [ManualLocation]}">
+                <StackPanel Spacing="8" Margin="0,10">
+                  <TextBlock Text="{Binding [CoordinateHelp]}" Classes="caption" />
+                  <TextBlock Text="{Binding [LocationName]}" />
+                  <TextBox Text="{Binding ManualName}" MaxLength="100" />
+                  <TextBlock Text="{Binding [Latitude]}" />
+                  <NumericUpDown Name="ManualLatitudeInput" Minimum="-90" Maximum="90" Increment="0.0001" FormatString="0.####" Value="{Binding ManualLatitude}" />
+                  <TextBlock Text="{Binding [Longitude]}" />
+                  <NumericUpDown Name="ManualLongitudeInput" Minimum="-180" Maximum="180" Increment="0.0001" FormatString="0.####" Value="{Binding ManualLongitude}" />
+                  <TextBlock Text="{Binding [TimeZone]}" />
+                  <AutoCompleteBox ItemsSource="{Binding TimeZones}" Text="{Binding ManualTimeZone, Mode=TwoWay}" FilterMode="ContainsOrdinal" MinimumPrefixLength="0" FlowDirection="LeftToRight" />
+                  <TextBlock Text="{Binding [CountryCode]}" />
+                  <TextBox Text="{Binding ManualCountry}" MaxLength="2" FlowDirection="LeftToRight" />
+                  <TextBlock Text="{Binding LocationError}" Foreground="{DynamicResource AccentTextBrush}" />
+                  <Button Content="{Binding [SaveLocation]}" Click="OnAddLocation" HorizontalAlignment="Stretch" />
+                </StackPanel>
+              </Expander>
+              <Expander Header="{Binding [SavedLocations]}">
+                <StackPanel Spacing="8" Margin="0,10">
+                  <ComboBox Name="SavedLocationSelector" ItemsSource="{Binding SavedLocations}" SelectedItem="{Binding SelectedSavedLocation}">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding City}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Content="{Binding [Remove]}" Click="OnRemoveLocation" />
+                </StackPanel>
+              </Expander>
+              <Border Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="12">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{Binding LocationName}" FontWeight="Bold" />
+                  <TextBlock Text="{Binding CountryName}" Foreground="{DynamicResource MutedTextBrush}" />
+                  <TextBlock Text="{Binding Coordinates}" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="{Binding [PrayerClock]}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Margin="20" Spacing="18" MaxWidth="700" HorizontalAlignment="Stretch">
+          <Border Classes="card"><StackPanel Spacing="10">
+              <CheckBox Content="{Binding AutomaticConventionLabel}" IsChecked="{Binding UseAutomaticConvention}" />
+              <TextBlock Classes="caption" Text="{Binding ConventionLabel}" Margin="0,3,0,0" />
+              <TextBlock Text="{Binding ConventionDescription}" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+              <TextBlock Classes="caption" Text="{Binding MethodLabel}" />
+              <ComboBox Name="MethodSelector" ItemsSource="{Binding MethodOptions}" SelectedItem="{Binding SelectedMethodOption}">
+                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Classes="caption" Text="{Binding AsrLabel}" Margin="0,5,0,0" />
+              <ComboBox Name="AsrSelector" ItemsSource="{Binding AsrOptions}" SelectedItem="{Binding SelectedAsr}">
+                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Classes="caption" Text="{Binding HighLatitudeLabel}" Margin="0,5,0,0" />
+              <ComboBox Name="HighLatitudeSelector" ItemsSource="{Binding HighLatitudeOptions}" SelectedItem="{Binding SelectedHighLatitude}">
+                <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <CheckBox Content="{Binding ClockLabel}" IsChecked="{Binding Use24HourClock}" Margin="0,7,0,0" />
+              <Expander Header="{Binding [SummerTimeTitle]}" IsExpanded="True">
+                <StackPanel Spacing="8" Margin="12">
+                  <TextBlock Text="{Binding [SummerDraftHelp]}" Classes="caption" />
+                  <TextBlock Text="{Binding ActiveSummerTimeDescription}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding [SummerTimeMode]}" Classes="caption" />
+                  <ComboBox Name="SummerTimeModeInput" ItemsSource="{Binding SummerTimeModes}" SelectedItem="{Binding SelectedSummerTimeMode}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <CheckBox Name="SummerTimeInput" IsChecked="{Binding SummerTimeEnabled}" IsEnabled="{Binding ForceSummerTime}">
+                    <TextBlock Text="{Binding [SummerTimeEnabled]}" />
+                  </CheckBox>
+                  <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                    <TextBlock Text="{Binding [SummerTimeMinutes]}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <NumericUpDown Name="SummerTimeMinutesInput" Grid.Column="1" Minimum="-180" Maximum="180" Value="{Binding SummerTimeMinutes}" IsEnabled="{Binding ManualSummerTime}" />
+                  </Grid>
+                  <TextBlock Text="{Binding SummerTimeRules}" TextWrapping="Wrap" />
+                  <TextBlock Name="SummerTimeErrorText" Text="{Binding SummerTimeError}" Foreground="{DynamicResource ErrorTextBrush}" />
+                  <StackPanel Name="CustomSummerTimePanel" IsVisible="{Binding CustomSummerTime}" Spacing="10">
+                    <TextBlock Text="{Binding [SummerCustomHelp]}" Classes="caption" />
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="8">
+                      <StackPanel>
+                        <TextBlock Text="{Binding [SummerTimeStart]}" FontSize="16" FontWeight="SemiBold" />
+                        <ContentControl Name="SummerStartEditor" Content="{Binding SummerTimeStartEditor}" ContentTemplate="{StaticResource SummerRuleTemplate}" HorizontalContentAlignment="Stretch" />
+                      </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="8">
+                      <StackPanel>
+                        <TextBlock Text="{Binding [SummerTimeEnd]}" FontSize="16" FontWeight="SemiBold" />
+                        <ContentControl Name="SummerEndEditor" Content="{Binding SummerTimeEndEditor}" ContentTemplate="{StaticResource SummerRuleTemplate}" HorizontalContentAlignment="Stretch" />
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                  <TextBlock Text="{Binding [SummerTimeHelp]}" TextWrapping="Wrap" FontSize="13" />
+                  <TextBlock Text="{Binding SummerTimeEditStatus}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                  <WrapPanel>
+                    <Button Name="ApplySummerTimeButton" Content="{Binding [Apply]}" Click="OnApplySummerTime" IsEnabled="{Binding CanApplySummerTime}" Margin="0,4,8,4" />
+                    <Button Content="{Binding [Cancel]}" Click="OnCancelSummerTime" IsEnabled="{Binding SummerTimeHasChanges}" Margin="0,4,8,4" />
+                    <Button Content="{Binding [RestoreAutomatic]}" Click="OnRestoreAutomaticSummerTime" Margin="0,4,8,4" />
+                  </WrapPanel>
+                </StackPanel>
+              </Expander>
+              <CheckBox Content="{Binding NotificationsLabel}" IsChecked="{Binding NotificationsEnabled}" />
+              <Grid ColumnDefinitions="*,120,Auto" ColumnSpacing="8" Margin="0,4,0,4">
+                <TextBlock Text="{Binding [NotificationPauseMinutes]}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <NumericUpDown Grid.Column="1" Minimum="1" Maximum="1440" Value="{Binding NotificationPauseMinutes}" />
+                <Button Grid.Column="2" Content="{Binding PauseButtonLabel}" Click="OnToggleNotificationsPause" MinWidth="110" />
+              </Grid>
+              <TextBlock Text="{Binding [LocationAdjustmentsHelp]}" Classes="caption" />
+              <Expander Header="{Binding AdjustmentsLabel}" Margin="0,5,0,0">
+                <Grid Margin="0,10,0,0" ColumnDefinitions="*,112" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                      RowSpacing="6">
+                  <TextBlock Text="{Binding PrayerRows[0].Name}" VerticalAlignment="Center" />
+                  <NumericUpDown Name="FajrAdjustmentInput" Grid.Column="1" Minimum="-60" Maximum="60" Value="{Binding FajrAdjustment}" />
+                  <TextBlock Grid.Row="1" Text="{Binding PrayerRows[1].Name}" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Minimum="-60" Maximum="60" Value="{Binding SunriseAdjustment}" />
+                  <TextBlock Grid.Row="2" Text="{Binding PrayerRows[2].Name}" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="2" Grid.Column="1" Minimum="-60" Maximum="60" Value="{Binding DhuhrAdjustment}" />
+                  <TextBlock Grid.Row="3" Text="{Binding PrayerRows[3].Name}" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Minimum="-60" Maximum="60" Value="{Binding AsrAdjustment}" />
+                  <TextBlock Grid.Row="4" Text="{Binding PrayerRows[4].Name}" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="4" Grid.Column="1" Minimum="-60" Maximum="60" Value="{Binding MaghribAdjustment}" />
+                  <TextBlock Grid.Row="5" Text="{Binding PrayerRows[5].Name}" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="5" Grid.Column="1" Minimum="-60" Maximum="60" Value="{Binding IshaAdjustment}" />
+                  <TextBlock Grid.Row="6" Text="{Binding HijriAdjustmentLabel}" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="6" Grid.Column="1" Minimum="-2" Maximum="2" Value="{Binding HijriAdjustment}" />
+                </Grid>
+              </Expander>
+            </StackPanel></Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="{Binding [AudioAdhkar]}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Margin="20" Spacing="18" MaxWidth="900" HorizontalAlignment="Stretch">
+          <Border Classes="card">
+            <StackPanel Spacing="12">
+              <TextBlock Classes="section" Text="{Binding [Audio]}" />
+              <TextBlock Text="{Binding [OggOnly]}" Classes="caption" />
+              <CheckBox Content="{Binding [PrayerAudioSwitch]}" IsChecked="{Binding PrayerAudioEnabled}" />
+              <TextBlock Text="{Binding [Volume]}" />
+              <Grid ColumnDefinitions="110,16,*">
+                <NumericUpDown Minimum="0" Maximum="100" Value="{Binding AudioVolume}" />
+                <Button Grid.Column="2" Content="{Binding [StopAudio]}" Click="OnStopAudio" />
+              </Grid>
+              <TextBlock Text="{Binding AudioStatus}" TextWrapping="Wrap" />
+              <TabControl Name="AudioPages" ItemContainerTheme="{StaticResource SectionTabTheme}">
+                <TabItem Header="{Binding NotificationsLabel}">
+                  <StackPanel Spacing="10" Margin="0,12">
+                    <TextBlock Classes="section" Text="{Binding [NotificationSettings]}" />
+                    <TextBlock Text="{Binding [NotificationTimingHelp]}" Classes="caption" TextWrapping="Wrap" />
+                    <CheckBox Name="NotificationMasterSwitch" Content="{Binding NotificationsLabel}" IsChecked="{Binding NotificationsEnabled}" />
+                    <TextBlock Text="{Binding [AudioHelp]}" Classes="caption" />
+                    <ItemsControl ItemsSource="{Binding NotificationRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Expander Header="{Binding PrayerName}" Margin="0,3">
+                            <StackPanel Margin="0,12" Spacing="8">
+                              <Border BorderBrush="{DynamicResource TabBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                <StackPanel Spacing="8">
+                                  <CheckBox Name="BeforePrayerSwitch" Content="{Binding BeforeLabel}" IsChecked="{Binding NotifyBefore}" />
+                                  <Grid ColumnDefinitions="*,110" ColumnSpacing="12">
+                                    <TextBlock Text="{Binding $parent[Window].DataContext[BeforeMinutes]}" VerticalAlignment="Center" />
+                                    <NumericUpDown Name="BeforePrayerMinutesInput" Grid.Column="1" Minimum="1" Maximum="180" Value="{Binding MinutesBefore}" IsEnabled="{Binding NotifyBefore}" />
+                                  </Grid>
+                                </StackPanel>
+                              </Border>
+                              <Border BorderBrush="{DynamicResource TabBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                <StackPanel Spacing="8">
+                                  <CheckBox Name="AtPrayerSwitch" Content="{Binding AtTimeLabel}" IsChecked="{Binding NotifyAtTime}" />
+                                  <TextBlock Text="{Binding AtTimeDescription}" Classes="caption" TextWrapping="Wrap" />
+                                </StackPanel>
+                              </Border>
+                              <Border BorderBrush="{DynamicResource TabBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                <StackPanel Spacing="8">
+                                  <CheckBox Name="AfterPrayerSwitch" Content="{Binding AfterLabel}" IsChecked="{Binding NotifyAfter}" />
+                                  <Grid ColumnDefinitions="*,110" ColumnSpacing="12">
+                                    <TextBlock Text="{Binding $parent[Window].DataContext[AfterMinutes]}" VerticalAlignment="Center" />
+                                    <NumericUpDown Name="AfterPrayerMinutesInput" Grid.Column="1" Minimum="1" Maximum="180" Value="{Binding MinutesAfter}" IsEnabled="{Binding NotifyAfter}" />
+                                  </Grid>
+                                </StackPanel>
+                              </Border>
+                              <CheckBox Content="{Binding $parent[Window].DataContext[AudioEnabled]}" IsChecked="{Binding AudioEnabled}" />
+                              <TextBlock Text="{Binding AudioFileName}" ToolTip.Tip="{Binding AudioPath}" FlowDirection="LeftToRight" />
+                              <WrapPanel>
+                                <Button Margin="0,4,8,4" Content="{Binding $parent[Window].DataContext[ChooseAudio]}" Click="OnChoosePrayerAudio" />
+                                <Button Margin="0,4,8,4" Content="{Binding $parent[Window].DataContext[Preview]}" Click="OnPreviewPrayerAudio" />
+                                <Button Margin="0,4,8,4" Content="{Binding $parent[Window].DataContext[Clear]}" Click="OnClearPrayerAudio" />
+                              </WrapPanel>
+                            </StackPanel>
+                          </Expander>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </TabItem>
+                <TabItem Header="{Binding [Adhkar]}">
+                  <StackPanel Spacing="10" Margin="0,12">
+                    <TextBlock Text="{Binding [PlaylistHelp]}" Classes="caption" />
+                    <CheckBox Content="{Binding [EnableAdhkar]}" IsChecked="{Binding AdhkarEnabled}" />
+                    <CheckBox Content="{Binding [RandomOrder]}" IsChecked="{Binding AdhkarRandomOrder}" />
+                    <TextBlock Text="{Binding [IntervalMinutes]}" />
+                    <NumericUpDown Width="120" HorizontalAlignment="Left" Minimum="1" Maximum="1440" Value="{Binding AdhkarIntervalMinutes}" />
+                    <Button Content="{Binding [AddAudioFiles]}" Click="OnAddAdhkarFiles" />
+                    <ListBox Name="AdhkarSelector" ItemsSource="{Binding AdhkarFiles}" SelectedItem="{Binding SelectedAdhkarFile}" MinHeight="100" MaxHeight="240" FlowDirection="LeftToRight">
+                      <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate></ListBox.ItemTemplate>
+                    </ListBox>
+                    <WrapPanel>
+                      <Button Margin="0,4,8,4" Content="{Binding [Preview]}" Click="OnPreviewAdhkar" />
+                      <Button Margin="0,4,8,4" Content="{Binding [MoveUp]}" Click="OnMoveAdhkarUp" />
+                      <Button Margin="0,4,8,4" Content="{Binding [Remove]}" Click="OnRemoveAdhkar" />
+                    </WrapPanel>
+                  </StackPanel>
+                </TabItem>
+                <TabItem Header="{Binding [TextAdhkar]}">
+                  <StackPanel Spacing="10" Margin="0,12">
+                    <TextBlock Text="{Binding [BundledAdhkarCaption]}" Classes="caption" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding DefaultAdhkarPreview}" TextWrapping="Wrap" MaxHeight="230" />
+                    <TextBlock Text="{Binding [TextAdhkarHelp]}" Classes="caption" />
+                    <CheckBox Content="{Binding [EnableTextAdhkar]}" IsChecked="{Binding TextAdhkarEnabled}" />
+                    <TextBlock Text="{Binding [DisplaySeconds]}" />
+                    <NumericUpDown Minimum="5" Maximum="600" Value="{Binding TextAdhkarDisplaySeconds}" Width="120" HorizontalAlignment="Left" />
+                    <TextBlock Text="{Binding [PauseMinutes]}" />
+                    <NumericUpDown Minimum="1" Maximum="1440" Value="{Binding TextAdhkarPauseMinutes}" Width="120" HorizontalAlignment="Left" />
+                    <ListBox Name="TextAdhkarSelector" ItemsSource="{Binding AdhkarTexts}" SelectedItem="{Binding SelectedAdhkarText}" MinHeight="100" MaxHeight="180">
+                      <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate></ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Text="{Binding [TextToRead]}" />
+                    <TextBox Text="{Binding AdhkarTextDraft}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="180" MaxLength="5000" />
+                    <WrapPanel>
+                      <Button Margin="0,4,8,4" Content="{Binding [AddText]}" Click="OnAddAdhkarText" />
+                      <Button Margin="0,4,8,4" Content="{Binding [UpdateText]}" Click="OnUpdateAdhkarText" />
+                      <Button Margin="0,4,8,4" Content="{Binding [Remove]}" Click="OnRemoveAdhkarText" />
+                    </WrapPanel>
+                  </StackPanel>
+                </TabItem>
+              </TabControl>
+            </StackPanel>
+          </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="{Binding [General]}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Margin="20" Spacing="18" MaxWidth="700" HorizontalAlignment="Stretch">
+          <Border Classes="card"><StackPanel Spacing="10">
+              <CheckBox Content="{Binding DarkModeLabel}" IsChecked="{Binding UseDarkMode}" />
+              <CheckBox Content="{Binding [EnableLogging]}" IsChecked="{Binding LoggingEnabled}" />
+              <TextBlock Text="{Binding LoggingError}" Classes="caption" />
+              <CheckBox Content="{Binding [DebugLogging]}" IsChecked="{Binding DebugLoggingEnabled}" IsEnabled="{Binding LoggingEnabled}" />
+              <Button Name="EmailLogsButton" Content="{Binding [EmailLogs]}" Click="OnEmailLogs" />
+              <CheckBox Content="{Binding CloseToTrayLabel}" IsChecked="{Binding CloseToTray}" />
+              <CheckBox Content="{Binding [StartMinimized]}" IsChecked="{Binding StartMinimized}" />
+              <CheckBox Content="{Binding [StartOnLogin]}" IsChecked="{Binding StartOnLogin}" />
+              <TextBlock Text="{Binding LoginStartupError}" Classes="caption" />
+              <TextBlock Classes="section" Text="{Binding [SettingsTransfer]}" />
+              <TextBlock Text="{Binding [SettingsTransferHelp]}" Classes="caption" />
+              <WrapPanel>
+                <Button Name="ExportSettingsButton" Content="{Binding [ExportSettings]}" Click="OnExportSettings" Margin="0,4,8,4" />
+                <Button Name="ImportSettingsButton" Content="{Binding [ImportSettings]}" Click="OnImportSettings" Margin="0,4,8,4" />
+              </WrapPanel>
+              <TextBlock Name="SettingsStatusText" Text="{Binding SettingsStatus}" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,5,0,0">
+                <Button Classes="nav" Content="{Binding HelpLabel}" Click="OnHelp" HorizontalContentAlignment="Center" />
+                <Button Grid.Column="1" Classes="nav" Content="{Binding AboutLabel}" Click="OnAbout" HorizontalContentAlignment="Center" />
+              </Grid>
+              <Expander Header="{Binding [Feedback]}" Margin="0,5">
+                <StackPanel Spacing="10" Margin="0,10">
+                  <TextBlock Text="{Binding [EmailHelp]}" Classes="caption" />
+                  <Button Content="{Binding [Suggestion]}" Click="OnSuggestion" />
+                  <Button Content="{Binding [Complaint]}" Click="OnComplaint" />
+                </StackPanel>
+              </Expander>
+              <Button Content="{Binding TrayExitLabel}" Click="OnExit" HorizontalAlignment="Stretch" />
+            </StackPanel></Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+        </TabControl>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</Window>

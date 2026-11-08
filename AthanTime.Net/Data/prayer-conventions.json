@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "updated": "2026-09-20",
+  "notice": "These are commonly used regional calculation conventions, not guaranteed official city timetables. Every country and city is covered by country inheritance or the MWL fallback. No hidden minute adjustments are applied.",
+  "default": {
+    "id": "global-mwl",
+    "methodId": "MWL",
+    "asrJuristic": "Standard",
+    "highLatitudeRule": "AngleBased",
+    "reference": "Muslim World League fallback; verify with the local mosque or authority."
+  },
+  "rules": [
+    {
+      "id": "umm-al-qura",
+      "methodId": "Makkah",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "Umm al-Qura convention",
+      "countryCodes": [ "SA" ]
+    },
+    {
+      "id": "egyptian-authority",
+      "methodId": "Egypt",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "Egyptian General Authority of Survey convention; Lebanon mapping verified against the supplied IslamicFinder Sidon reference",
+      "countryCodes": [ "EG", "LB" ]
+    },
+    {
+      "id": "karachi",
+      "methodId": "Karachi",
+      "asrJuristic": "Hanafi",
+      "highLatitudeRule": "AngleBased",
+      "reference": "University of Islamic Sciences, Karachi convention",
+      "countryCodes": [ "AF", "BD", "IN", "PK" ]
+    },
+    {
+      "id": "turkiye-diyanet",
+      "methodId": "Turkey",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "Türkiye Diyanet convention",
+      "countryCodes": [ "TR" ]
+    },
+    {
+      "id": "south-east-asia",
+      "methodId": "Singapore",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "Common South-East Asian 20°/18° convention; verify national timetable policy",
+      "countryCodes": [ "BN", "ID", "MY", "SG" ]
+    },
+    {
+      "id": "dubai",
+      "methodId": "Dubai",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "Dubai convention",
+      "countryCodes": [ "AE" ]
+    },
+    {
+      "id": "qatar",
+      "methodId": "Qatar",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "Qatar convention",
+      "countryCodes": [ "QA" ]
+    },
+    {
+      "id": "kuwait",
+      "methodId": "Kuwait",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "Kuwait convention",
+      "countryCodes": [ "KW" ]
+    },
+    {
+      "id": "north-america-isna",
+      "methodId": "ISNA",
+      "asrJuristic": "Standard",
+      "highLatitudeRule": "AngleBased",
+      "reference": "ISNA North America convention",
+      "countryCodes": [ "CA", "US" ]
+    }
+  ]
+}

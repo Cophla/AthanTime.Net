@@ -1,0 +1,85 @@
+name: Desktop release validation
+
+# Optional, manual build infrastructure only. The application remains offline.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # Hosted private-repository minutes can be billed. Use the local commands instead.
+    if: github.event.repository.private == false
+    name: ${{ matrix.rid }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            rid: win-x64
+          - runner: ubuntu-22.04
+            rid: linux-x64
+          - runner: ubuntu-24.04-arm
+            rid: linux-arm64
+          - runner: macos-15-intel
+            rid: osx-x64
+          - runner: macos-15
+            rid: osx-arm64
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Read the shared framework and version
+        id: project
+        run: |
+          $properties = ([xml](Get-Content Directory.Build.props -Raw)).Project.PropertyGroup
+          $framework = [string]$properties.TargetFramework
+          if ($framework -notmatch '^net(\d+\.\d+)$') { throw "Unsupported framework: $framework" }
+          "sdk=$($Matches[1]).x" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "version=$($properties.Version)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.project.outputs.sdk }}
+      - name: Record SDK and runner versions
+        run: dotnet --info
+      - name: Build and run the real xUnit v3 test suite
+        run: |
+          dotnet build AthanTime.Net.slnx -c Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test AthanTime.Net.slnx -c Release --no-build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install the free NSIS compiler
+        if: runner.os == 'Windows'
+        run: |
+          choco install nsis --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "${env:ProgramFiles(x86)}\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Build the matching native package (not an installation test)
+        env:
+          PACKAGE_RID: ${{ matrix.rid }}
+          PACKAGE_VERSION: ${{ steps.project.outputs.version }}
+        run: |
+          dotnet run --project tools/InstallerBuilder -c Release --no-build -- --rid $env:PACKAGE_RID --version $env:PACKAGE_VERSION
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Keep the unsigned installer for manual desktop validation
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-${{ matrix.rid }}
+          path: artifacts/packages/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Keep multilingual headless captures
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-captures-${{ matrix.rid }}
+          path: tests/AthanTime.Tests/bin/Release/**/ui-captures/*.png
+          if-no-files-found: ignore
+          retention-days: 7

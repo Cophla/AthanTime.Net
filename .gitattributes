@@ -1,0 +1,16 @@
+# Normalize repository text; retain the editor's C# and Windows script conventions.
+* text=auto eol=lf
+*.cs text eol=crlf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.sh text eol=lf
+*.command text eol=lf
+
+# Compressed offline datasets and media are ordinary Git objects, not LFS pointers.
+*.db binary
+*.br binary
+*.zip binary
+*.ogg binary
+*.png binary
+*.ico binary
