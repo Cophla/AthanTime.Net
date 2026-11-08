@@ -7,7 +7,7 @@ languages, on-demand SQLite location search, offline IANA time-zone rules and
 JSON settings. Release permits one running instance per OS user; launching again
 opens its existing window. Shoroq is shown as sunrise, never described as a prayer.
 
-Current release: **1.0.2-beta.6 (Beta)**. The main header/window title identifies
+Current release: **1.0.2-beta.7 (Beta)**. The main header/window title identifies
 the beta in all eight languages; About and support drafts retain the full release
 version. Setup/package names also identify the beta. See [release-channel packaging](docs/PACKAGING.md#beta-release-2026-11-03)
 for native version formats and verification limits.
@@ -29,7 +29,8 @@ repository-wide scope, measured evidence, resolved search/settings findings
 and the native resource checks still needed; it does not certify a full-app
 RAM/CPU/GPU budget.
 Latest verified build/test evidence and native-test limits are in
-[packaging validation](docs/PACKAGING.md#fresh-repository-preparation-2026-11-08).
+[packaging validation](docs/PACKAGING.md#support-mailbox-beta7-2026-11-08).
+Copy-ready GitHub prerelease details are in the [beta.7 release notes](docs/releases/v1.0.2-beta.7.md).
 
 ## Included
 
@@ -172,8 +173,9 @@ packaging prerequisites are in [one-click setup](docs/PACKAGING.md#one-click-lau
 
 Feedback opens a localized draft in the user's mail app. Email logs first exports
 only application logs to a ZIP for review and manual attachment; nothing is sent
-automatically. Configure `Application:SupportEmail` in `appsettings.json` before
-distribution: `support@example.com` is a non-deliverable placeholder.
+automatically. Support, suggestions, complaints and log-sharing drafts are
+addressed to **athantimedotnet@gmail.com**, the public project mailbox configured
+by `Application:SupportEmail` in `appsettings.json`.
 
 Free portable, Windows setup, Debian package, and macOS app/DMG recipes are in [docs/PACKAGING.md](docs/PACKAGING.md).
 Use the [release checklist](docs/RELEASE-CHECKLIST.md) for offline data updates and native smoke tests. The optional manual workflow builds/tests/packages five matching RIDs; it does not certify interactive tray, audio or installation behavior.

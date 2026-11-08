@@ -47,6 +47,11 @@ network access is required. A completed build is not a completed desktop test.
   drafts, setup/uninstall display names and package filenames. Keep upgrade keys,
   bundle/package identifiers and profile paths stable. Check that the chosen
   version upgrades the preceding release and precedes the intended stable release.
+- [ ] Verify `Application:SupportEmail` and its fallback both use the approved
+  public mailbox `athantimedotnet@gmail.com`, including the actual packaged JSON.
+  Check suggestions, complaints and log drafts in all eight languages without
+  launching mail clients. Publish the release tag/title/notes and asset checksums;
+  mark beta releases as prereleases and keep their installation identities stable.
 - [ ] For a trusted Windows release, follow [Windows signing](WINDOWS-SIGNING.md):
   validate the provider certificate, sign/verify payload DLLs/EXEs, the NSIS
   uninstaller and final setup. Test the signed installation and temporary

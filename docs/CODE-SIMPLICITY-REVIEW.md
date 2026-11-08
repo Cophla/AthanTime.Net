@@ -1,5 +1,15 @@
 # Code simplicity and resource review
 
+## Beta.7 support contact — 2026-11-08
+
+Only the shipped contact setting, existing fallback and shared release version
+change at runtime. The existing mailto draft path retains its encoding, localized
+content and manual-send boundary on Windows, macOS and Linux. No new service,
+abstraction, dependency, timer or background work is needed. Tests cover shipped
+configuration as well as the fallback so one cannot hide an outdated value in the other.
+See [packaging evidence](PACKAGING.md#support-mailbox-beta7-2026-11-08) for this
+release; the beta.6 and older reviews below are historical.
+
 ## Beta.6 repository preparation — 2026-11-08
 
 The catalog's storage changes to a versioned ZIP with two small shared MSBuild
@@ -10,7 +20,7 @@ reminders do not change. The existing builder creates the archive; no new tool
 project, service, runtime loader or general-purpose framework was added.
 Real target fixtures and archive/payload hash checks cover failure/incremental
 behavior. See [new repository preparation](PACKAGING.md#fresh-repository-preparation-2026-11-08)
-for current checks and native limits; the dated reviews below are historical.
+for that preparation's checks and native limits; the dated reviews below are historical.
 
 ## Beta.5 fixes — 2026-11-05
 

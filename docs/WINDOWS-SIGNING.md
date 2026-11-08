@@ -33,7 +33,7 @@ The full application suite was not rerun at that initial stage. The subsequent
 [cross-platform review](PACKAGING.md#latest-verification-2026-10-30) records that
 stage's full-suite checks; historical full-suite failures remain
 recorded in [packaging evidence](PACKAGING.md#installer-verification-2026-10-29).
-The [latest beta rebuild](PACKAGING.md#fresh-repository-preparation-2026-11-08) supersedes the old
+The [latest beta rebuild](PACKAGING.md#support-mailbox-beta7-2026-11-08) supersedes the old
 setup outputs with the current source, but also reports `NotSigned`; its new
 checksum supersedes the historical artifact checksums.
 The Windows scope selector/elevation also uses NSIS's bundled nsDialogs,

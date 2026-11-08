@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using AthanTime.Net.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
@@ -140,15 +141,55 @@ public sealed class AudioAndSupportTests(SupportService support, ILocalizationSe
     [InlineData(SupportMessage.Complaint)]
     public void DraftUsesUserMailAccountAndEncodesLocalizedFields(SupportMessage message)
     {
-        var uri = support.CreateDraft(message, "AR", "logs & test.zip");
-        Assert.Equal("mailto", uri.Scheme);
-        var decoded = Uri.UnescapeDataString(uri.OriginalString);
-        Assert.Contains("support@example.com", decoded);
-        Assert.Contains($"Athan Time {AthanTime.Net.App.ReleaseVersion}", decoded);
-        Assert.Contains(localization.Get("ar", "EmailBody"), decoded);
-        Assert.Contains("logs & test.zip", decoded);
-        Assert.Contains("%26", uri.OriginalString);
-        Assert.DoesNotContain("&attachment=", uri.OriginalString, StringComparison.OrdinalIgnoreCase);
+        foreach (var language in LocalizationService.Languages)
+        {
+            var uri = support.CreateDraft(message, language.Code.ToUpperInvariant(), "logs & test.zip");
+            Assert.Equal("mailto", uri.Scheme);
+            Assert.StartsWith("mailto:athantimedotnet@gmail.com?", uri.OriginalString, StringComparison.Ordinal);
+            var decoded = Uri.UnescapeDataString(uri.OriginalString);
+            Assert.Contains($"Athan Time {AthanTime.Net.App.ReleaseVersion}", decoded);
+            Assert.Contains(localization.Get(language.Code, "EmailBody"), decoded);
+            Assert.Contains("logs & test.zip", decoded);
+            Assert.Contains("%26", uri.OriginalString);
+            Assert.DoesNotContain("&attachment=", uri.OriginalString, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
+    /// <summary>Check the actual shipped JSON too, so a correct fallback cannot hide a stale package destination.</summary>
+    [Theory]
+    [InlineData(SupportMessage.DebugLogs)]
+    [InlineData(SupportMessage.Suggestion)]
+    [InlineData(SupportMessage.Complaint)]
+    public void ShippedConfigurationUsesThePublicSupportMailbox(SupportMessage message)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"))
+            .Build();
+        Assert.Equal("athantimedotnet@gmail.com", configuration["Application:SupportEmail"]);
+        var configured = new SupportService(localization, configuration);
+        foreach (var language in LocalizationService.Languages)
+            Assert.StartsWith("mailto:athantimedotnet@gmail.com?", configured.CreateDraft(message, language.Code).OriginalString,
+                StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExplicitSupportRecipientOverridesTheFallback()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            { ["Application:SupportEmail"] = "feedback@example.org" }).Build();
+        var configured = new SupportService(localization, configuration);
+        Assert.StartsWith("mailto:feedback@example.org?", configured.CreateDraft(SupportMessage.Suggestion, "en").OriginalString,
+            StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("not-an-email")]
+    [InlineData("recipient@")]
+    public void InvalidConfiguredRecipientCannotCreateAMailDraft(string recipient)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            { ["Application:SupportEmail"] = recipient }).Build();
+        var configured = new SupportService(localization, configuration);
+        Assert.Throws<FormatException>(() => configured.CreateDraft(SupportMessage.Complaint, "en"));
+    }
 }

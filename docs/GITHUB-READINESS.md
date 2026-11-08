@@ -1,7 +1,7 @@
 # Starting a new GitHub repository
 
-The beta.6 source snapshot is prepared for a **new, empty repository**. Use the
-reviewed clean source ZIP or fresh local repository supplied with the handoff.
+The beta.7 source snapshot is prepared for GitHub. For a **new, empty repository**,
+use the reviewed clean source ZIP or fresh local repository supplied with the handoff.
 It includes current source, tests, installers/build recipes, documentation,
 compressed catalogs, media and required third-party notices. Source ZIPs omit
 Git metadata, local profiles, signing material, logs and generated outputs.
@@ -50,8 +50,9 @@ The executable-bit command preserves macOS/Linux launchers when importing loose
 files on Windows; reviewed Git archives also retain those modes. Commit
 author/committer identity is public metadata. Choose an intentional public
 project email or your actual GitHub-provided no-reply address; do not assume Git
-will anonymize your global identity. The handoff's selected email is kept in
-local Git configuration, not embedded in application settings or documentation.
+will anonymize your global identity. Git identity and the app's support recipient
+are separate choices. The approved project address `athantimedotnet@gmail.com`
+is intentionally public in the app's configuration, fallback and documentation.
 Required public copyright/provenance credits remain intact.
 
 Verify the new identity/history and file inventory before adding the empty remote
@@ -75,10 +76,15 @@ The Windows/macOS/Linux matrix remains win-x64, linux-x64, linux-arm64,
 osx-x64, osx-arm64. Shared MSBuild extraction and .NET ZIP creation add no new
 native dependency. Native installers still require matching hosts. Native
 desktop/signing/resource validation remains separate from source readiness;
-see [dated packaging evidence](PACKAGING.md#fresh-repository-preparation-2026-11-08).
+see [dated packaging evidence](PACKAGING.md#support-mailbox-beta7-2026-11-08).
+Use the [beta.7 release notes](releases/v1.0.2-beta.7.md) for the tag, title,
+description and upload instructions. Existing GitHub repositories should advance
+their reviewed branch to the beta.7 source; do not force-push or replace public
+history to publish an update. The supplied clean repository retains its beta.6
+initial commit followed by the beta.7 change.
 
-The November 8 clean-repository builds passed all 425 tests in each configuration
-with zero warnings/errors. The fresh single-commit source history has 135 files,
+The November 8 beta.6 clean-repository builds passed all 425 tests in each configuration
+with zero warnings/errors. That initial single-commit source snapshot had 135 files,
 no oversized blobs or detected checked secret/home-path patterns. Shared data
 archive and payload hashes, five packaging plans and executable launcher modes
 were reviewed. Native platform/signing limits remain in the packaging evidence.

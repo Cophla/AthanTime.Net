@@ -297,7 +297,7 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
     [Theory]
     [InlineData("{}")]
     [InlineData("[]")]
-    [InlineData("{\"Application\":{\"SupportEmail\":\"support@example.com\"}}")]
+    [InlineData("{\"Application\":{\"SupportEmail\":\"athantimedotnet@gmail.com\"}}")]
     [InlineData("{\"LocationId\":\"\"}")]
     [InlineData("{\"LocationId\":null}")]
     [InlineData("{\"LocationId\":7}")]

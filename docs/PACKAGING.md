@@ -31,9 +31,47 @@ public-repository CI builds/tests/packages all five RIDs with
 session and is disabled for private repositories to avoid billed runner minutes.
 Local packaging remains independent of GitHub.
 
+## Support mailbox beta.7 (2026-11-08)
+
+The current release is **1.0.2-beta.7**. Shipped `Application:SupportEmail` and
+the missing-setting fallback now use the approved public project mailbox
+`athantimedotnet@gmail.com`. Suggestions, complaints and log-sharing actions
+still create localized drafts in the user's own mail application. No SMTP,
+account credentials, automatic sending or runtime network dependency is added.
+The mailbox is intentionally public; Git commit identity is a separate setting.
+
+Regression coverage checks the actual shipped JSON, all three actions in eight
+languages, the missing-setting fallback, explicit configuration overrides and
+invalid-recipient failures. Production-host tests cover both environment defaults.
+Version propagation remains shared across UI, setup, portable archives and support
+drafts. The five-RID matrix, native dependencies, licenses, translations, settings
+schema, update/uninstall identity and profile preservation remain unchanged.
+
+Validation on November 8, Windows 10.0.26300 x64, SDK 10.0.403: Debug and Release
+solution builds completed with zero warnings/errors; **431 tests passed in each**,
+none skipped. All 126 local documentation links/anchors passed. Documentation
+evidence was finalized after those runs; application/build/test inputs were unchanged.
+
+The rebuilt upload set belongs in `artifacts/releases/v1.0.2-beta.7/`: Windows
+setup, five portable ZIPs, source ZIP, `SHA256SUMS.txt`, `BUILD-INFO.json` and
+`RELEASE-INFORMATION.md`. Per-artifact sizes/checksums, source revision, actual
+test results and native limitations are recorded alongside the binaries rather
+than embedding a source commit's own checksum into its documentation. Copy-ready
+GitHub fields and description are in the [beta.7 release notes](releases/v1.0.2-beta.7.md).
+Preserve the previous beta's assets; publish this as a new prerelease.
+
+Build/inspect the Windows installer here and cross-publish portable ZIPs for
+`win-x64`, `linux-x64`, `linux-arm64`, `osx-x64` and `osx-arm64`. DEB/DMG generation
+requires matching hosts. Inspect archive integrity, bundled runtime/configuration,
+native architecture headers (including universal macOS graphics libraries),
+catalog/audio hashes and Windows setup-to-portable payload parity. These are
+package checks, not native installation or desktop execution tests. Windows
+downloads remain unsigned; Smart App Control trust, native install/update/
+uninstall, audio/tray/login and macOS signing/notarization remain unverified.
+
 ## Fresh repository preparation (2026-11-08)
 
-The current release is **1.0.2-beta.6**. Source now versions
+The beta.6 source preparation introduced **1.0.2-beta.6**. Source now versions
 `Data/locations.db.zip` as an ordinary Git object (34,410,205 bytes), with the
 archived JSON and regeneration tools. Shared `LocationCatalog.targets` uses
 MSBuild's [Unzip](https://learn.microsoft.com/en-us/visualstudio/msbuild/unzip-task)
@@ -1259,8 +1297,8 @@ application-data `AthanTime` folder; installers do not import or reset them.
 
 | OS | Fresh install or update |
 | --- | --- |
-| Windows x64 | Run `AthanTime-1.0.2-beta.6-win-x64-setup.exe`. Interactive setup offers Only me/All users and preselects the existing scope. Each selected installation retains its registered scope and original folder, including custom folders from 1.0.0. No prior uninstall is required. |
-| Debian/Ubuntu | Build the matching `amd64`/`arm64` DEB on Linux, then use `sudo apt install ./AthanTime-1.0.2-beta.6-amd64.deb` (choose the matching file). The stable `athan-time` package identity supports fresh installation and upgrades. |
+| Windows x64 | Run `AthanTime-1.0.2-beta.7-win-x64-setup.exe`. Interactive setup offers Only me/All users and preselects the existing scope. Each selected installation retains its registered scope and original folder, including custom folders from 1.0.0. No prior uninstall is required. |
+| Debian/Ubuntu | Build the matching `amd64`/`arm64` DEB on Linux, then use `sudo apt install ./AthanTime-1.0.2-beta.7-amd64.deb` (choose the matching file). The stable `athan-time` package identity supports fresh installation and upgrades. |
 | macOS | Build the matching Intel/Apple Silicon DMG on macOS. Open it and copy **Athan Time.app** to the same Applications folder, choosing Replace for the existing bundle. |
 
 Windows interactive setup offers Retry/Cancel when it cannot write the existing
@@ -1345,7 +1383,7 @@ chmod +x packaging/linux/build-deb.sh
 ```
 
 Defaults come from the shared version and native CPU. To override, supply the
-version and `amd64`/`arm64`, for example `./packaging/linux/build-deb.sh 1.0.2-beta.6 arm64`.
+version and `amd64`/`arm64`, for example `./packaging/linux/build-deb.sh 1.0.2-beta.7 arm64`.
 
 The DEB declares native .NET/UI/audio dependencies for Ubuntu 22.04 and newer
 and recent Debian releases. It uses X11 (XWayland on a Wayland desktop).
@@ -1363,7 +1401,7 @@ chmod +x packaging/macos/build-app.sh
 ```
 
 Defaults come from the shared version and native CPU. To override, supply the
-version and RID, for example `./packaging/macos/build-app.sh 1.0.2-beta.6 osx-x64`.
+version and RID, for example `./packaging/macos/build-app.sh 1.0.2-beta.7 osx-x64`.
 The script creates an `.app` bundle and a DMG with
 Apple's built-in `hdiutil`.
 

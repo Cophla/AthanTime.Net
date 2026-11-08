@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Keep prerelease identity shared by the UI, support drafts and all packaging entry points. -->
-    <Version>1.0.2-beta.6</Version>
+    <Version>1.0.2-beta.7</Version>
     <Authors>Athan Time contributors</Authors>
     <Copyright>Copyright © 2026 Athan Time contributors</Copyright>
   </PropertyGroup>

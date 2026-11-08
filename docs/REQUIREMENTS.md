@@ -37,7 +37,7 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
   Action buttons share the main window's green palette, rounded bordered shape,
   readable labels and hover/pressed/disabled states, with visible keyboard focus.
 - Release identity: `Directory.Build.props` owns the semantic version. Current
-  release is **1.0.2-beta.6**. Beta builds show a translated Beta label in the
+  release is **1.0.2-beta.7**. Beta builds show a translated Beta label in the
   main header/window title in every language/theme. About, support drafts and
   package/setup display names retain the prerelease version; hide source-revision
   metadata in user-facing version strings. Keep install/profile/login/single-instance
@@ -140,8 +140,11 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
 - Diagnostics/support: optional per-user `AthanTime/Logs`; disabling logging closes
   the sink and deletes only app-owned logs, removing the directory only when empty.
   Cleanup failures stay visible. Debug verbosity changes at runtime, not via a
-  separate user edition. Localized email drafts use the user's mail app; log ZIPs
-  require review/manual attachment. Never send automatically or export settings as logs.
+  separate user edition. Localized email drafts use the user's mail app and the
+  public project mailbox `athantimedotnet@gmail.com` for suggestions, complaints
+  and log sharing. Shipped configuration and its missing-setting fallback must agree.
+  Log ZIPs require review/manual attachment. Never send automatically or export
+  settings as logs.
 - Packaging: one self-contained Release edition per OS, free native recipes behind
   `tools/InstallerBuilder`, plus portable ZIPs. Root launchers offer one-click
   native packaging on Windows/macOS and terminal launch on Linux, use the shared

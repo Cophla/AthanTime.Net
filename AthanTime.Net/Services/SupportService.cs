@@ -6,11 +6,12 @@ namespace AthanTime.Net.Services;
 /// <summary>Identifies the user's email action.</summary>
 public enum SupportMessage { DebugLogs, Suggestion, Complaint }
 
-/// <summary>Creates localized drafts for the user's mail app; never connects to a mail server.</summary>
+/// <summary>Creates localized drafts to the configured project mailbox; never connects to a mail server.</summary>
 public sealed class SupportService(ILocalizationService localization, IConfiguration configuration)
 {
     private readonly ILocalizationService _localization = localization;
-    private readonly string _recipient = configuration["Application:SupportEmail"] ?? "support@example.com";
+    // Retain the public support destination when a custom configuration omits the setting.
+    private readonly string _recipient = configuration["Application:SupportEmail"] ?? "athantimedotnet@gmail.com";
 
     /// <summary>Creates a mailto draft. Attachments must be added by the user in their mail app.</summary>
     public Uri CreateDraft(SupportMessage message, string language, string? attachmentName = null)

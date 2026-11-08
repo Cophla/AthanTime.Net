@@ -153,7 +153,9 @@ public sealed class ApplicationStartupTests(UiTestHost ui)
             Assert.True(File.Exists(Path.Combine(directory, "settings.json")));
             Assert.False(Directory.Exists(Path.Combine(directory, "Logs")));
             Assert.IsType<AudioPlayer>(host.Services.GetRequiredService<IAudioPlayer>());
-            Assert.NotNull(host.Services.GetRequiredService<SupportService>());
+            var support = host.Services.GetRequiredService<SupportService>();
+            Assert.StartsWith("mailto:athantimedotnet@gmail.com?", support.CreateDraft(SupportMessage.Suggestion, "en").OriginalString,
+                StringComparison.Ordinal);
             var positions = host.Services.GetRequiredService<WindowPositionService>();
             Assert.Null(positions.Load());
             Assert.False(File.Exists(Path.Combine(directory, "window-position.json")));
