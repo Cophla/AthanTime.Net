@@ -17,8 +17,8 @@
     <PackageReference Include="SoundFlow" Version="1.4.1" GeneratePathProperty="true" />
     <PackageReference Include="NVorbis" Version="0.10.5" GeneratePathProperty="true" />
     <PackageReference Include="NodaTime" Version="3.3.5" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
@@ -45,7 +45,9 @@
   <!-- Unpack the versioned prebuilt catalog at build time, never in application startup. -->
   <Import Project="../tools/LocationDataBuilder/LocationCatalog.targets" />
   <!-- Fail packaging if offline data, decoders or RID-specific native backends are missing. -->
-  <Target Name="VerifyAudioPublish" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' != ''">
+  <Target Name="VerifyOfflinePublish" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' != ''">
+    <Error Condition="'$(SelfContained)' != 'true'" Text="Release packages must be self-contained; publish with --self-contained true." />
+    <Error Condition="'$(PublishSingleFile)' == 'true' Or '$(PublishTrimmed)' == 'true' Or '$(PublishAot)' == 'true'" Text="Single-file, trimmed and Native AOT packages require separate native validation and are not supported by these recipes." />
     <PropertyGroup>
       <AudioNative Condition="'$(RuntimeIdentifier)' == 'win-x64'">miniaudio.dll</AudioNative>
       <AudioNative Condition="'$(RuntimeIdentifier)' == 'linux-x64' Or '$(RuntimeIdentifier)' == 'linux-arm64'">libminiaudio.so</AudioNative>
@@ -53,15 +55,21 @@
       <SqliteNative Condition="'$(RuntimeIdentifier)' == 'win-x64'">e_sqlite3.dll</SqliteNative>
       <SqliteNative Condition="'$(RuntimeIdentifier)' == 'linux-x64' Or '$(RuntimeIdentifier)' == 'linux-arm64'">libe_sqlite3.so</SqliteNative>
       <SqliteNative Condition="'$(RuntimeIdentifier)' == 'osx-x64' Or '$(RuntimeIdentifier)' == 'osx-arm64'">libe_sqlite3.dylib</SqliteNative>
+      <RuntimeSuffix Condition="'$(RuntimeIdentifier)' == 'win-x64'">.dll</RuntimeSuffix>
+      <RuntimeSuffix Condition="'$(RuntimeIdentifier)' == 'linux-x64' Or '$(RuntimeIdentifier)' == 'linux-arm64'">.so</RuntimeSuffix>
+      <RuntimeSuffix Condition="'$(RuntimeIdentifier)' == 'osx-x64' Or '$(RuntimeIdentifier)' == 'osx-arm64'">.dylib</RuntimeSuffix>
+      <RuntimePrefix Condition="'$(RuntimeIdentifier)' != 'win-x64'">lib</RuntimePrefix>
     </PropertyGroup>
+    <Error Condition="'$(RuntimeSuffix)' == ''" Text="Unsupported publish runtime: $(RuntimeIdentifier)." />
     <ItemGroup>
-      <RequiredAudio Include="$(PublishDir)Assets/Audio/adhan.ogg;$(PublishDir)Assets/Audio/takbeer.ogg;$(PublishDir)Assets/Audio/alhamdulillah.ogg;$(PublishDir)NVorbis.dll" />
-      <RequiredAudio Include="$(PublishDir)$(AudioNative)" Condition="'$(AudioNative)' != ''" />
-      <RequiredAudio Include="$(PublishDir)Data/locations.db;$(PublishDir)Microsoft.Data.Sqlite.dll" />
-      <RequiredAudio Include="$(PublishDir)$(SqliteNative)" Condition="'$(SqliteNative)' != ''" />
+      <RequiredPayload Include="$(PublishDir)Assets/Audio/adhan.ogg;$(PublishDir)Assets/Audio/takbeer.ogg;$(PublishDir)Assets/Audio/alhamdulillah.ogg;$(PublishDir)NVorbis.dll" />
+      <RequiredPayload Include="$(PublishDir)$(AudioNative)" Condition="'$(AudioNative)' != ''" />
+      <RequiredPayload Include="$(PublishDir)Data/locations.db;$(PublishDir)Microsoft.Data.Sqlite.dll" />
+      <RequiredPayload Include="$(PublishDir)$(SqliteNative)" Condition="'$(SqliteNative)' != ''" />
+      <RequiredPayload Include="$(PublishDir)System.Private.CoreLib.dll;$(PublishDir)AthanTime.Net.runtimeconfig.json;$(PublishDir)$(RuntimePrefix)coreclr$(RuntimeSuffix);$(PublishDir)$(RuntimePrefix)hostfxr$(RuntimeSuffix)" />
       <ObsoleteAudio Include="$(PublishDir)**/*.mp3" />
     </ItemGroup>
-    <Error Condition="!Exists('%(RequiredAudio.Identity)')" Text="Missing offline deployment file: %(RequiredAudio.Identity)" />
+    <Error Condition="!Exists('%(RequiredPayload.Identity)')" Text="Missing offline deployment file: %(RequiredPayload.Identity)" />
     <Error Condition="'@(ObsoleteAudio)' != ''" Text="Publish directory contains obsolete MP3 files; use a clean staging directory." />
   </Target>
 </Project>

@@ -13,7 +13,7 @@ using AthanTime.Net.Services;
 
 namespace AthanTime.Net;
 
-/// <summary>Main desktop window with device-local position restoration and UI-only event handlers.</summary>
+/// <summary>Main desktop window with device-local placement, work-area fitting and UI-only event handlers.</summary>
 public partial class MainWindow : Window
 {
     private ILogger<MainWindow> _logger = NullLogger<MainWindow>.Instance;
@@ -27,12 +27,24 @@ public partial class MainWindow : Window
     private WindowPosition? _savedPosition;
     private bool _positionOpened;
     private bool _positionCapturePending;
+    private readonly Size _preferredMinimumSize;
+    private bool _windowFitPending;
+    private bool _fittingWindow;
+    private bool _interactiveMoveResize;
+    private const uint _wmEnterSizeMove = 0x0231;
+    private const uint _wmExitSizeMove = 0x0232;
 
     /// <summary>Creates the parameterless instance required by the Avalonia XAML loader.</summary>
     public MainWindow()
     {
         InitializeComponent();
         Icon = App.CreateDesktopIcon();
+        _preferredMinimumSize = new Size(MinWidth, MinHeight);
+        PositionChanged += (_, _) => QueuePositionCapture();
+        Deactivated += (_, _) => SaveWindowPosition();
+        ScalingChanged += (_, _) => QueueWindowFit();
+        Screens.Changed += OnScreensChanged;
+        if (OperatingSystem.IsWindows()) Win32Properties.AddWndProcHookCallback(this, ObserveWindowsMoveResize);
     }
 
     /// <summary>Creates the main window from dependencies supplied by the host.</summary>
@@ -53,10 +65,6 @@ public partial class MainWindow : Window
             WindowStartupLocation = WindowStartupLocation.Manual;
             Position = visible;
         }
-        PositionChanged += (_, _) => QueuePositionCapture();
-        Deactivated += (_, _) => SaveWindowPosition();
-        ScalingChanged += (_, _) => { if (IsVisible) KeepPositionOnScreen(); };
-        Screens.Changed += OnScreensChanged;
     }
 
     /// <summary>Creates the runtime window with device-local placement, log export and email draft services.</summary>
@@ -96,7 +104,8 @@ public partial class MainWindow : Window
     {
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
-        KeepPositionOnScreen();
+        FitWindowOnScreen();
+        QueueWindowFit();
         Activate();
     }
 
@@ -104,15 +113,18 @@ public partial class MainWindow : Window
     protected override void OnOpened(EventArgs args)
     {
         _positionOpened = true;
-        KeepPositionOnScreen();
-        CaptureNormalPosition();
+        // The base updates native frame size before fitting; Opened may also apply one-time startup hiding.
         base.OnOpened(args);
+        FitWindowOnScreen();
+        QueueWindowFit();
+        CaptureNormalPosition();
     }
 
     /// <inheritdoc />
     public override void Hide()
     {
         SaveWindowPosition();
+        _interactiveMoveResize = false;
         base.Hide();
     }
 
@@ -120,22 +132,93 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs args)
     {
         SaveWindowPosition();
-        if (_windowPositions is not null) Screens.Changed -= OnScreensChanged;
+        _positionOpened = false;
+        _interactiveMoveResize = false;
+        Screens.Changed -= OnScreensChanged;
+        if (OperatingSystem.IsWindows()) Win32Properties.RemoveWndProcHookCallback(this, ObserveWindowsMoveResize);
         base.OnClosed(args);
+    }
+
+    private IntPtr ObserveWindowsMoveResize(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        // Observe only: Windows must retain its native title-bar/resize loop and DPI handling.
+        if (message == _wmEnterSizeMove) _interactiveMoveResize = true;
+        else if (message == _wmExitSizeMove)
+        {
+            _interactiveMoveResize = false;
+            QueueWindowFit();
+        }
+        return IntPtr.Zero;
     }
 
     private void OnScreensChanged(object? sender, EventArgs args)
     {
-        if (IsVisible) KeepPositionOnScreen();
+        QueueWindowFit();
     }
 
-    private void KeepPositionOnScreen()
+    /// <inheritdoc />
+    protected override void OnResized(WindowResizedEventArgs args)
     {
-        if (_windowPositions is null || WindowState != WindowState.Normal) return;
+        base.OnResized(args);
+        QueueWindowFit();
+    }
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowStateProperty) QueueWindowFit();
+    }
+
+    private void QueueWindowFit()
+    {
+        if (!_positionOpened || !IsVisible || _windowFitPending) return;
+        _windowFitPending = true;
+        // DPI, state and native resize callbacks can describe intermediate geometry. Fit after they settle.
+        Dispatcher.UIThread.Post(() =>
+        {
+            _windowFitPending = false;
+            FitWindowOnScreen();
+            CaptureNormalPosition();
+        }, DispatcherPriority.Background);
+    }
+
+    private void FitWindowOnScreen()
+    {
+        if (!_positionOpened || !IsVisible || _fittingWindow || _interactiveMoveResize || WindowState != WindowState.Normal) return;
+        var client = ClientSize;
+        var border = FrameSize is { Width: > 0, Height: > 0 } frame
+            ? new Size(Math.Max(0, frame.Width - client.Width), Math.Max(0, frame.Height - client.Height))
+            : new Size();
         var requested = Position;
-        if (_normalPosition is { } normal && !Screens.All.Any(screen => screen.WorkingArea.Contains(requested)))
+        var frameSize = FrameSize ?? new Size(Width, Height);
+        var bounds = new PixelRect(Position, PixelSize.FromSize(frameSize, DesktopScaling));
+        var intersectsDisplay = Screens.All.Any(screen => screen.Bounds.Intersects(bounds));
+        // The hosting monitor tracks the native window's DPI; its top-left corner can be on another monitor.
+        var targetScreen = intersectsDisplay ? Screens.ScreenFromWindow(this) ?? Screens.Primary : Screens.Primary;
+        if (!intersectsDisplay && _normalPosition is { } normal)
+        {
             requested = new PixelPoint(normal.X, normal.Y);
-        if (VisiblePosition(requested) is { } visible && visible != Position) Position = visible;
+            targetScreen = Screens.ScreenFromPoint(requested) ?? Screens.Primary;
+        }
+        if (targetScreen is null) return;
+        var fit = WindowPositionService.Fit(requested, new Size(Width, Height), _preferredMinimumSize, border,
+            DesktopScaling, [targetScreen.WorkingArea]);
+        if (fit is not { } placement) return;
+        _fittingWindow = true;
+        try
+        {
+            if (Width != placement.ClientSize.Width || Height != placement.ClientSize.Height || Position != placement.Position)
+                _logger.LogDebug("Fitting main window to work area: client {Size}, position {Position}, desktop scale {Scale}",
+                    placement.ClientSize, placement.Position, DesktopScaling);
+            // On unusually small work areas only, lower the minimum; restore it when more space is available.
+            MinWidth = placement.MinimumSize.Width;
+            MinHeight = placement.MinimumSize.Height;
+            if (Width != placement.ClientSize.Width) Width = placement.ClientSize.Width;
+            if (Height != placement.ClientSize.Height) Height = placement.ClientSize.Height;
+            if (Position != placement.Position) Position = placement.Position;
+        }
+        finally { _fittingWindow = false; }
     }
 
     private PixelPoint? VisiblePosition(PixelPoint requested)
@@ -153,6 +236,7 @@ public partial class MainWindow : Window
         Dispatcher.UIThread.Post(() =>
         {
             _positionCapturePending = false;
+            if (!_positionOpened || !IsVisible) return;
             CaptureNormalPosition();
         }, DispatcherPriority.Background);
     }
@@ -160,7 +244,7 @@ public partial class MainWindow : Window
     private void CaptureNormalPosition()
     {
         // Ignore startup layout and native minimized/maximized coordinates, including Windows' hidden sentinel.
-        if (_windowPositions is null || !_positionOpened || !IsVisible || WindowState != WindowState.Normal
+        if (_windowPositions is null || !_positionOpened || !IsVisible || _interactiveMoveResize || WindowState != WindowState.Normal
             || !Screens.All.Any(screen => screen.WorkingArea.Contains(Position))) return;
         _normalPosition = new WindowPosition(Position.X, Position.Y);
     }

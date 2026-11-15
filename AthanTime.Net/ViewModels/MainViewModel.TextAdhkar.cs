@@ -38,12 +38,24 @@ public sealed partial class MainViewModel
     public int TextAdhkarDisplaySeconds
     {
         get => _settings.TextAdhkar.DisplaySeconds;
-        set { value = Math.Clamp(value, 5, 600); if (value == TextAdhkarDisplaySeconds) return; _settings.TextAdhkar.DisplaySeconds = value; SaveTextAdhkar(); }
+        set
+        {
+            value = Math.Clamp(value, 5, 600);
+            if (value == TextAdhkarDisplaySeconds) return;
+            _settings.TextAdhkar.DisplaySeconds = value;
+            SaveTextAdhkar();
+        }
     }
     public int TextAdhkarPauseMinutes
     {
         get => _settings.TextAdhkar.PauseMinutes;
-        set { value = Math.Clamp(value, 1, 1440); if (value == TextAdhkarPauseMinutes) return; _settings.TextAdhkar.PauseMinutes = value; SaveTextAdhkar(); }
+        set
+        {
+            value = Math.Clamp(value, 1, 1440);
+            if (value == TextAdhkarPauseMinutes) return;
+            _settings.TextAdhkar.PauseMinutes = value;
+            SaveTextAdhkar();
+        }
     }
 
     /// <summary>Adds one complete text; line breaks are preserved and comparisons ignore case.</summary>

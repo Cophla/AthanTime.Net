@@ -17,7 +17,9 @@ public sealed class SummerTimeRuleEditor : INotifyPropertyChanged
     /// <summary>Creates editor state, not a service; the parent supplies settings, translation and persistence.</summary>
     public SummerTimeRuleEditor(Func<SummerTimeRule> rule, Action<Action> change, Func<string, string> text)
     {
-        _rule = rule; _change = change; _text = text;
+        _rule = rule;
+        _change = change;
+        _text = text;
         Months = Enumerable.Range(1, 12).Select(month => new SelectOption<int>(month, "")).ToArray();
         Weekdays = Enum.GetValues<DayOfWeek>().Select(day => new SelectOption<DayOfWeek>(day, "")).ToArray();
         Occurrences = Enumerable.Range(1, 5).Select(week => new SelectOption<int>(week, "")).ToArray();
@@ -31,13 +33,75 @@ public sealed class SummerTimeRuleEditor : INotifyPropertyChanged
     public string this[string key] => _text(key);
     public bool IsWeekday => _rule().UseWeekday;
     public bool IsCalendarDay => !IsWeekday;
-    public SelectOption<int> SelectedMonth { get => Months.Single(item => item.Value == _rule().Month); set { if (value is not null) Change(_rule().Month != value.Value, () => _rule().Month = value.Value); } }
-    public SelectOption<DayOfWeek> SelectedWeekday { get => Weekdays.Single(item => item.Value == _rule().Weekday); set { if (value is not null) Change(_rule().Weekday != value.Value, () => _rule().Weekday = value.Value); } }
-    public SelectOption<int> SelectedOccurrence { get => Occurrences.Single(item => item.Value == _rule().Occurrence); set { if (value is not null) Change(_rule().Occurrence != value.Value, () => _rule().Occurrence = value.Value); } }
-    public SelectOption<bool> SelectedKind { get => Kinds.Single(item => item.Value == _rule().UseWeekday); set { if (value is not null) Change(_rule().UseWeekday != value.Value, () => _rule().UseWeekday = value.Value); } }
-    public int Day { get => _rule().Day; set { value = Math.Clamp(value, 1, 31); Change(_rule().Day != value, () => _rule().Day = value); } }
-    public int Hour { get => _rule().Hour; set { value = Math.Clamp(value, 0, 23); Change(_rule().Hour != value, () => _rule().Hour = value); } }
-    public int Minute { get => _rule().Minute; set { value = Math.Clamp(value, 0, 59); Change(_rule().Minute != value, () => _rule().Minute = value); } }
+    public SelectOption<int> SelectedMonth
+    {
+        get => Months.Single(item => item.Value == _rule().Month);
+        set
+        {
+            if (value is null) return;
+            Change(_rule().Month != value.Value, () => _rule().Month = value.Value);
+        }
+    }
+
+    public SelectOption<DayOfWeek> SelectedWeekday
+    {
+        get => Weekdays.Single(item => item.Value == _rule().Weekday);
+        set
+        {
+            if (value is null) return;
+            Change(_rule().Weekday != value.Value, () => _rule().Weekday = value.Value);
+        }
+    }
+
+    public SelectOption<int> SelectedOccurrence
+    {
+        get => Occurrences.Single(item => item.Value == _rule().Occurrence);
+        set
+        {
+            if (value is null) return;
+            Change(_rule().Occurrence != value.Value, () => _rule().Occurrence = value.Value);
+        }
+    }
+
+    public SelectOption<bool> SelectedKind
+    {
+        get => Kinds.Single(item => item.Value == _rule().UseWeekday);
+        set
+        {
+            if (value is null) return;
+            Change(_rule().UseWeekday != value.Value, () => _rule().UseWeekday = value.Value);
+        }
+    }
+
+    public int Day
+    {
+        get => _rule().Day;
+        set
+        {
+            value = Math.Clamp(value, 1, 31);
+            Change(_rule().Day != value, () => _rule().Day = value);
+        }
+    }
+
+    public int Hour
+    {
+        get => _rule().Hour;
+        set
+        {
+            value = Math.Clamp(value, 0, 23);
+            Change(_rule().Hour != value, () => _rule().Hour = value);
+        }
+    }
+
+    public int Minute
+    {
+        get => _rule().Minute;
+        set
+        {
+            value = Math.Clamp(value, 0, 59);
+            Change(_rule().Minute != value, () => _rule().Minute = value);
+        }
+    }
 
     /// <summary>Updates captions and values in place after a language or location change.</summary>
     public void Refresh(CultureInfo culture)
