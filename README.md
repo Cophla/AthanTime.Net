@@ -5,7 +5,7 @@ macOS and Linux.
 
 [Project website](https://github.com/Cophla/AthanTime.Net) · [Releases and downloads](https://github.com/Cophla/AthanTime.Net/releases)
 
-**Source version: 1.0.2-beta.15 — Beta release preparation**
+**Version: 1.0.2-beta.15 — Beta**
 
 ## Technology
 
@@ -49,20 +49,22 @@ Choose the download that matches your computer:
 2. On Windows, run the setup file. For portable downloads, extract all files together.
 3. Open the app, choose your city and review the calculation and reminder settings.
 
-For local builds, the latest verified downloads and package-selection README are
-in `artifacts/packages`. Every portable download includes
-[README.txt](packaging/README.txt); Mac/Linux packages also include START-HERE.txt.
+Every portable download includes [README.txt](packaging/README.txt).
+Mac/Linux packages also include START-HERE.txt. On Mac, open Athan Time.app;
+on Linux, use the included launcher. See the
+[release description](docs/releases/v1.0.2-beta.15.md#release-description).
 
-The beta.15 preparation includes a macOS app bundle and Linux desktop launchers; see [desktop launch instructions](docs/PACKAGING.md#desktop-launchers-2026-11-15). See the
-[beta.15 download instructions](docs/releases/v1.0.2-beta.15.md#release-description).
+On first launch, confirm or change the suggested city before reminders start.
+When updating, use Windows Setup or quit the app before replacing Mac/Linux files.
+Uninstall keeps settings by default; optional settings removal is explained in the
+included README. Windows uninstall confirms when removal succeeds.
 Calculated prayer times may differ from your local mosque's timetable.
 
 ## Beta status
 
-This is a beta release. Windows downloads are unsigned and may be blocked by
-Windows security features. Full installation/audio/tray testing remains pending; Linux/macOS
-ZIPs were built on Windows. See the [release preparation notes](docs/releases/v1.0.2-beta.15.md)
-for current limitations.
+This is a beta release. Windows and Mac may show security warnings because the
+downloads are unsigned. Wider desktop testing is still in progress. See
+[compatibility and testing details](docs/PACKAGING.md#compatibility-and-validation-limits).
 
 ## Support
 
@@ -77,18 +79,3 @@ Review exported logs before attaching or sharing them.
 - [Installation and build details](docs/PACKAGING.md)
 - [Product requirements](docs/REQUIREMENTS.md)
 - [Third-party notices and credits](THIRD-PARTY-NOTICES.md)
-
-Windows setup requests graceful app exit before an update and opens it after successful interactive installation. Older versions may need manual Exit once. Silent setup does not open the app. On macOS/Linux, quit before replacing files, then open the app from Finder or its desktop shortcut.
-
-Windows uninstall shows a confirmation when removal completes successfully.
-Silent uninstall stays unattended. On macOS/Linux, use the normal Finder or package-manager removal workflow.
-
-On first launch, the app uses your OS language and 12/24-hour preference and suggests a city from your region/time zone. Confirm or change the city before prayer reminders start. Existing settings stay unchanged.
-
-Uninstall keeps settings by default. Windows offers an optional Remove my settings checkbox. On Mac/Linux, run the included Remove-My-Settings helper as your normal user before removing the app. Other users and custom recordings are kept.
-
-Windows setup adds an Uninstall choice for an existing installation and requests graceful app exit directly, including from the tray. Start uninstall normally, even for All users: optional settings cleanup runs as your user before the administrator prompt for shared-file removal. Run as administrator keeps settings and disables that option. Cleanup errors offer Retry, keep remaining settings and continue, or Abort. The current local packages are in `artifacts/packages`; obsolete generated downloads were removed. Windows preferences are stored separately for each user in `%APPDATA%\AthanTime`.
-
-On Linux, run `bash Install-Shortcut.sh` from the extracted folder to add Athan Time
-to your menu with its correct dock icon. After updating, rerun it, fully exit/reopen
-the app, and replace any older generic shortcut pinned to the dock.

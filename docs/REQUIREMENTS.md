@@ -28,6 +28,13 @@ and macOS Intel/Apple Silicon targets. .NET 11 raises the supported macOS baseli
 to 15; Ubuntu 22.04/24.04/26.04 and Debian 13 remain declared Linux desktop baselines.
 Native desktop verification remains distinct from builds and package inspection.
 
+Release descriptions use plain language for everyday users. Describe useful changes,
+how to start the app on Windows/macOS/Linux and essential beta/security caveats;
+keep internal build reports, local paths and personal feedback out of the description.
+Required licenses and provenance remain available separately. Publication and commit
+confirmation follow [AGENTS.md](../AGENTS.md#working-rules). Documentation edits must
+preserve existing published versions and binaries unless their exact change is confirmed.
+
 ## Required behavior
 
 - First launch per OS user (not installer/admin culture): use the OS UI language

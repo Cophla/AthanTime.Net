@@ -31,12 +31,28 @@ public-repository CI builds/tests/packages all five RIDs with
 session and is disabled for private repositories to avoid billed runner minutes.
 Local packaging remains independent of GitHub.
 
+## Release-description review (2026-11-17)
+
+The beta.15 description has a shorter local proposal for everyday users. Keep
+build reports, local paths, owner feedback and publication troubleshooting out of
+the public description; keep essential beta/security caveats and required
+licenses/provenance available. README duplication is removed without changing
+application or platform behavior. The shared guide now requires confirmation of
+reviewed commits and GitHub changes; prior publication is not ongoing permission.
+
+This edit does not change GitHub, published tags or any release asset. Existing
+files under `artifacts/releases/v1.0.2-beta.15/` remain the published snapshot,
+including its original description and source ZIP. The separate local proposal
+is `artifacts/release-description-review/RELEASE-NOTES.md`. Do not rebuild packages,
+regenerate the published source ZIP, or overwrite snapshot metadata for text-only
+review. Check documentation links, private-information patterns and hash parity
+of the preserved snapshot. No application tests or native OS tests are needed for
+this wording-only change; previous results remain historical evidence.
+
 ## Beta15 release (2026-11-17)
 
 Version **1.0.2-beta.15** includes successful-uninstall confirmation and the
 preceding installer, profile-cleanup, Linux icon, audio, countdown and UI fixes.
-The owner reported that initial tests look fine on November 17; no platform/test
-matrix was supplied, so this is feedback rather than native certification.
 Windows x64, Linux x64/ARM64 and macOS Intel/Apple Silicon remain self-contained;
 macOS requires 15+. The release directory is `artifacts/releases/v1.0.2-beta.15/`.
 Build/test/package/source evidence is under `artifacts/beta15-preparation/`.

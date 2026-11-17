@@ -1,10 +1,19 @@
 # Release checklist
 
-Current local preparation: **v1.0.2-beta.15**. Use its versioned folder under
-`artifacts/releases/`, [release notes](releases/v1.0.2-beta.15.md) and recorded
-build evidence. Check all seven download hashes before uploading; mark the GitHub
-release as a prerelease. The beta.15 request authorizes the reviewed release commit and publication; report the actual result.
+Published baseline: **v1.0.2-beta.15**. Its existing release and downloaded assets
+are preserved. [Release notes](releases/v1.0.2-beta.15.md) may contain an uncommitted
+local proposal; do not treat a changed working file as the published description.
+Before any commit or GitHub mutation, obtain confirmation of the reviewed proposal
+under [AGENTS.md](../AGENTS.md#working-rules). Never reuse earlier publication
+authorization for a later description edit or replacement binary.
 The native desktop, signing and recording-rights limits below remain applicable.
+
+Keep public release text short and understandable: useful changes, download/startup
+instructions, supported platforms and essential beta/security caveats. Review it for
+private paths, secrets, owner conversations and unnecessary build/history details.
+Keep required licenses/provenance and technical evidence in their appropriate files.
+For description-only edits, check text/links and preserve the published asset hashes;
+do not rebuild application packages or replace source archives.
 
 For uninstall completion, check Only me, All users through the elevated child,
 already elevated removal and setup's Uninstall action: one success message after

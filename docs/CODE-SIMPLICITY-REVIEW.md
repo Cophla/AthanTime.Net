@@ -1,5 +1,15 @@
 # Code simplicity and resource review
 
+## Release wording and confirmation - 2026-11-17
+
+Shorten the user-facing release description and remove duplicated README setup
+paragraphs. Keep engineering evidence and required attribution in their existing
+specialist files. The shared guide requires confirmation of reviewed commits and
+GitHub changes; preparation alone is not approval. This is documentation-only:
+no application, installer, translation, dependency or platform behavior changes.
+Keep the published Windows, macOS and Linux packages and source archives intact;
+documentation/link and snapshot-hash checks replace unnecessary application tests.
+
 ## Uninstall completion - 2026-11-17
 
 Reuse the NSIS success callback for normal removal and successful machine-child

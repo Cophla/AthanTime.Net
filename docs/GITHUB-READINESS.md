@@ -27,7 +27,7 @@ fixes are included in the refreshed packages and current reviewed source ZIP und
 snapshot. Obsolete release-folder downloads were removed. The prepared Git repository
 retains its older snapshot; do not publish that tree as the current source. Use the
 refreshed source ZIP for a future reviewed import; existing public releases require
-a new version rather than silently replacing their downloads. The beta.15 request authorizes a release commit and publication through the reviewed GitHub commit based on public main; actual results belong in the handoff.
+a new version rather than silently replacing their downloads. Beta.15 is already published. Any further commit, push, release-description edit or asset change requires confirmation of the reviewed proposal under AGENTS.md. Preserve its existing published versions and binaries.
 
 ## Keep old history separate
 
@@ -108,7 +108,7 @@ downloads are self-contained; their names spell out operating system, CPU and
 Setup/Portable. Source ZIPs are for building, not running. Keep package binaries
 in GitHub Release assets and the reviewed source changes in the repository.
 The supplied local source copy can have pending reviewed changes; inspect
-`git status` and commit those before tagging the release. The explicitly requested beta.15 commit/publication uses the reviewed GitHub commit based on public main; the older prepared repository is preserved.
+`git status` and commit those before tagging the release. Further commits or publication require explicit confirmation of the reviewed changes; earlier release authorization does not approve a new edit. The older prepared repository remains preserved.
 
 The November 8 beta.6 clean-repository builds passed all 425 tests in each configuration
 with zero warnings/errors. That initial single-commit source snapshot had 135 files,
