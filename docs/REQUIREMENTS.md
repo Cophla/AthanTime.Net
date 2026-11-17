@@ -8,7 +8,7 @@ in [packaging](PACKAGING.md) and the [release checklist](RELEASE-CHECKLIST.md).
 
 ## Scope
 
-A simple, accurate, offline-first Avalonia/.NET 10 desktop app for Windows, Ubuntu/Linux
+A simple, accurate, offline-first Avalonia/.NET 11 desktop app for Windows, Ubuntu/Linux
 and macOS. Runtime needs no network, account, API key or paid service. Prefer trusted,
 free/open-source, business-usable .NET dependencies and keep logic understandable.
 Do not promise every IslamicFinder feature or every settlement without verified coverage.
@@ -21,8 +21,27 @@ deployment choices must preserve the declared platform/architecture matrix, with
 platform-specific differences and limitations made explicit. The mandatory
 engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules).
 
+The shared .NET 11 target applies to the application, tests, single-instance probe,
+installer builder, icon builder and location-data builder. Self-contained downloads
+include .NET; developers need the .NET 11 SDK. Keep Windows x64, Linux x64/ARM64
+and macOS Intel/Apple Silicon targets. .NET 11 raises the supported macOS baseline
+to 15; Ubuntu 22.04/24.04/26.04 and Debian 13 remain declared Linux desktop baselines.
+Native desktop verification remains distinct from builds and package inspection.
+
 ## Required behavior
 
+- First launch per OS user (not installer/admin culture): use the OS UI language
+  when supported, otherwise English; initialize 12/24-hour display from regional
+  time format. Use injected embedded TZDB to map the OS zone and its aliases;
+  suggest one catalog city in that zone, preferring region then population/stable ID.
+  Region/language/time cannot identify the exact city. A visible localized review
+  asks the user to confirm the displayed city or choose Settings > Location.
+  Automatic prayer reminders wait for confirmation; confirmation/selection never
+  replays earlier reminders. Missing/unknown zone or no match retains the visible
+  fallback city for review. Existing, recovered, malformed or future-schema profiles
+  never receive regional reinitialization. No network/geolocation permission.
+
+- System date/time changes must refresh the next-Athan countdown, next prayer/time and progress with property-specific notifications as well as refreshing displayed prayer rows. Preserve automatic TZDB conversion at each prayer instant.
 - Schedule display: five prayers (Fajr, Dhuhr, Asr, Maghrib, Isha), Shoroq/sunrise,
   next prayer, UTC-based countdown, selected-date navigation, Islamic midnight and
   qibla. Today is primary; all six times
@@ -36,8 +55,9 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
   windows non-activating. OS file pickers retain the platform's native appearance.
   Action buttons share the main window's green palette, rounded bordered shape,
   readable labels and hover/pressed/disabled states, with visible keyboard focus.
+- Public links: use https://github.com/Cophla/AthanTime.Net for the project and https://github.com/Cophla/AthanTime.Net/releases for downloads, including betas. General settings opens these through the OS browser on explicit user action. About provides a concise localized feature summary and explicitly clickable, visibly underlined project/download URLs. About renders the version in a separate LTR block so RTL text cannot reorder it. About, support drafts and package metadata carry the same approved links. Automatic online version checking remains a proposed optional feature.
 - Release identity: `Directory.Build.props` owns the semantic version. Current
-  release is **1.0.2-beta.7**. Beta builds show a translated Beta label in the
+  source preparation is **1.0.2-beta.15**. Beta builds show a translated Beta label in the
   main header/window title in every language/theme. About, support drafts and
   package/setup display names retain the prerelease version; hide source-revision
   metadata in user-facing version strings. Keep install/profile/login/single-instance
@@ -84,13 +104,21 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
   prayer time, master switches, volume 0–100 and simple play/stop controls.
   Save actual clamped volume changes immediately; assigning the same effective
   volume must not rewrite settings or notify unchanged bindings.
+- Manual tests: every Audio & Adhkar tab has a localized Test button using shared
+  styles. Prayer test uses the next actual prayer popup and its configured audio
+  switches/path. Recording test uses selection, first playlist item or Takbeer.
+  Reading test uses selection, first saved text or current default and expires
+  after the configured duration even while automatic reminders are disabled/paused.
+  Tests preserve saved switches and prayer delivery history. Reading tests do not
+  advance automatic rotation and dismissal starts a full pause. Reuse the existing
+  audio adapter, themed popups and app clock on Windows/macOS/Linux.
 - Adhkar audio: multiple local recordings, sequential or random (repeats allowed),
   intervals 1–1440 minutes. Prayer audio takes priority; busy/missed intervals are
   skipped, never queued. Keep decoding streamed and release idle audio resources.
 - Text Adhkar: sourced Arabic morning/evening/general defaults with meanings in all
   eight languages, editable multiline custom list, display 5–600 seconds then close
   and wait 1–1440 minutes. Reuse the app clock; no catch-up windows. Source/scheduling
-  caveats and default CC0 audio provenance are in [audio help](AUDIO.md).
+  caveats and default audio provenance are in [audio help](AUDIO.md).
 - Desktop: tray prayer/countdown status, show/exit/play/stop/category controls and
   global pause 1–1440 minutes in app/tray. Pause stops current audio/text immediately.
   Close-to-tray is not exit; missing tray must leave the app accessible. Login startup
@@ -104,13 +132,26 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
   writing for every drag event or unchanged coordinates. Restore across launches
   and tray cycles, preserving the existing default size/start-minimized behavior.
   Minimized, maximized and fullscreen coordinates must not replace the last normal
-  position. Clamp to the current display's work area after monitor/DPI changes;
+  position. Fit both window size and position to the current display's work area
+  on opening, tray restoration and after monitor/DPI/resize/state changes settle.
+  Reserve space for native frame decorations and use desktop scaling independently
+  of rendering density. Hidden/minimized/maximized/fullscreen windows are not fitted.
+  Select the monitor hosting the native window rather than the monitor containing
+  only its top-left corner when it spans displays. Ordinary position events must
+  not refit the window. On Windows, leave native move/resize and DPI messages
+  unhandled, suppress fitting/intermediate capture while that loop is active, and
+  queue fitting after it ends. Hiding/closing clears the gate. Verify real drag
+  loops and rendered captions as well as settled programmatic bounds; other OS
+  native drag timing must be checked separately.
+  Keep the preferred 980×600 minimum where possible; temporarily lower effective
+  minimums on smaller work areas and restore them when more space is available.
+  Such displays can fall below the readable layout baseline. Size is not persisted;
   missing/offscreen monitors fall back to the primary display, with the title bar
   reachable even on a smaller work area. Missing/damaged position files use
   centered startup; read must not rewrite them. Storage failures log and leave
   the window usable, with a later save retry. Position is separate from settings
-  transfers and survives app updates/uninstall with the per-user profile.
-  Absolute placement depends on the OS window manager/compositor; Linux retains
+  transfers and survives app updates/uninstall unless explicit current-user cleanup is chosen.
+  Absolute placement and size depend on the OS window manager/compositor; Linux retains
   the existing X11/XWayland deployment boundary. Native checks are required.
   Allow one running **Release** instance per OS user across sessions on Windows,
   macOS and Linux. Manual and login Release launches share the same guard
@@ -150,6 +191,9 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
   native packaging on Windows/macOS and terminal launch on Linux, use the shared
   version, retain errors/results, and never install or upload the output. See
   [packaging setup](PACKAGING.md#one-click-launchers) for prerequisites.
+  Portable macOS packages include a Finder-launchable .app and a .command helper;
+  portable Linux includes detached launch, menu shortcut and Ubuntu/Debian
+  OS-dependency scripts. Preserve executable ZIP modes on Windows builds.
   Self-contained deployment is the distribution default so first app launch does
   not depend on separately installing .NET. Keep the shared C# codebase and current
   SoundFlow/NVorbis audio approach with the required native payload for each RID.
@@ -161,7 +205,12 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
   numeric base-version components; macOS display metadata/DMG names retain the
   full release label. Debian package versions translate the prerelease separator
   to `~`, ordering the beta before its final version. Package filenames and
-  portable archives retain the shared semantic version.
+  portable archives retain the shared semantic version. Download filenames spell
+  out Windows/Linux/macOS and CPU, distinguish Setup from Portable, and use
+  GitHub-compatible ASCII characters. macOS names distinguish Intel from Apple
+  Silicon. These names never change install, profile or single-instance identities.
+  Publish guards reject framework-dependent packages, missing bundled runtime
+  libraries and deployment modes that have not received native validation.
   Reject invalid versions and mismatched native hosts before publishing.
   Windows packaging detects installed NSIS or downloads a pinned, SHA-256-verified
   portable build tool into ignored artifacts; cached tools work offline and never
@@ -189,22 +238,92 @@ engineering and verification rules are in [AGENTS.md](../AGENTS.md#working-rules
   Different scopes may coexist in different folders, never overwrite each other.
   Settings, recordings and opt-in login startup remain individual user choices.
   Windows setup reuses the registered folder, including legacy custom
-  folders; it checks executable write access and asks the user to exit a running
-  app rather than terminating it. Do not allow skipping locked payload files.
+  folders. At committed Install, request graceful exit of only this installation
+  through a bounded same-user shutdown request when the installed capability marker
+  is present, then selected-executable Restart Manager as fallback. Explicit IPC
+  exit and native Windows shutdown bypass tray hiding and exit
+  confirmation, allowing normal host/media cleanup. Never force-kill. Retain
+  bounded write-access polling and Retry/Cancel for older/refusing apps. Do not
+  allow skipping locked payload files. Successful interactive setup opens the app
+  visibly without changing minimized/login preferences; silent setup does not
+  launch. Read the elevated child's final destination and launch as the original
+  desktop user, never the administrator profile. If safe launch is unavailable,
+  leave the installation intact and show the Start-menu fallback.
   Updating preserves login-startup registration; per-user uninstall removes that
   entry only when it points to the removed installation. Machine uninstall leaves
-  all per-user login entries untouched; users should disable startup before removal.
+  all per-user login entries untouched by default; explicit interactive cleanup may remove only the desktop-user entry. Other users should disable startup before removal.
   The installer-owned directory marker retains uninstall scope independently of
   shared registration; legacy missing markers mean current-user installation.
   Windows uninstall removes the
   known bundled payload, retaining user-added files and the separate profile.
+  Windows uninstall requests graceful exit at startup in the original user and again
+  before cleanup/removal, reusing the same-user pipe/selected-executable Restart Manager path. Never
+  force-kill; retain the write-access guard and manual fallback for older/refusing apps.
+  Windows uninstall offers an unchecked Remove my settings checkbox in its original
+  unelevated user process. After optional cleanup, only All users file/registration
+  removal requests UAC in a silent child. An already elevated launch disables the
+  checkbox and keeps settings; direct the user to start uninstall normally. Setup
+  maintenance selection also precedes elevation. User cleanup precedes the later
+  UAC prompt and cannot be rolled back if that prompt is cancelled. Silent uninstall
+  keeps settings. Never launch token-based cleanup from an elevated uninstaller.
+  Remove known settings/backups/temp/position files and app-owned logs; disable that
+  user login entry, retain recordings/unknown files and never traverse linked profile
+  or log paths. Retry a busy instance lease for a bounded interval after shutdown.
+  Failure exposes native launch stage/Windows errors or specific app cleanup results
+  with Retry, Ignore (keep remaining settings and continue removal), or Abort. Abort stops uninstall before payload removal. The pre-host cleanup
+  mode acquires the per-user lease; it refuses a running Release app and never starts
+  a host or sends activation. Unix portable/DMG helpers require typed consent and
+  reject root. Run before removing the app; DEB removal never sweeps user homes.
+  Windows portable includes a current-user confirmation helper too. Other users are
+  always untouched. Close concurrent Debug runs manually before cleanup.
   A stale Windows uninstaller must preserve shared registration and shortcuts
   belonging to a different installation.
+  Setup offers Install/update and Uninstall when the selected scope is registered;
+  `/Uninstall` delegates to that registered uninstaller. Maintenance completion or
+  cancellation must not trigger installation's automatic launch. Missing/unusable
+  registered uninstallers require repair first. Older apps without the shutdown
+  marker retain the manual-exit fallback; Debug runs must be closed manually.
+  Successful interactive Windows uninstall displays an explicit completion message
+  once, including All users removal through its silent elevated child. The original
+  interactive parent displays that child's success only after exit code zero;
+  cancellation/failure and silent uninstall must not show a success message.
+  macOS/Linux removal continues to use Finder/the package manager or manual portable
+  removal; their native tools provide completion feedback.
   Linux updates use the same DEB identity; macOS replaces the same application
   bundle. Exit the app before updates and retain the installation path for login
   startup. See [installation and updates](PACKAGING.md#installation-and-updates).
   Optional five-RID public-repository
   CI is build infrastructure, not a runtime dependency or installation test.
+
+## Linux desktop registration
+
+Checkbox captions and indicators share the same vertical center in normal/taller
+and wrapped rows, in every language/theme and RTL/LTR layout. Shared styles retain
+Fluent's native checked/unchecked/indeterminate and keyboard behavior. Avoid fixed
+caption offsets that depend on a particular font or OS.
+
+Every distribution includes a plain-text user guide for starting, updating and
+removing the app, per-user settings, support and beta limits. Portable ZIPs expose
+README.txt at their root; macOS places it beside the bundle. Mac/Linux retain
+START-HERE.txt with their native startup instructions. Guides state that .NET is
+bundled, explain Linux icon registration and never require a terminal to stay open.
+
+Linux portable application-menu registration is opt-in through Install-Shortcut.sh.
+It installs the exported icon under the user's XDG data directory and writes an
+icon name plus the matching Avalonia X11/XWayland window class, so Ubuntu can group
+the running app with its dock/menu entry. Native DEB uses the same desktop metadata.
+The helper is repeatable and supports folders containing spaces/metacharacters.
+Moving/updating the portable folder requires rerunning the helper; stale pinned
+generic shortcuts may need to be replaced. Native desktop validation remains required.
+
+## User-data location
+
+User preferences use .NET `ApplicationData/AthanTime`, which resolves to
+`%APPDATA%\AthanTime` on Windows. This is a valid per-user roaming-preference
+location, separate from Program Files and other users. Logs and window placement
+currently share that legacy folder; Microsoft's guidance favors LocalApplicationData
+for device-specific data. No storage migration is included in the uninstall fix.
+See [the Windows storage review](PACKAGING.md#windows-maintenance-and-storage-review-2026-11-16).
 
 ## Accuracy and summer time
 

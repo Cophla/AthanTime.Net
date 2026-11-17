@@ -1,0 +1,35 @@
+Athan Time for desktop Linux
+
+Read README.txt for first-run settings, updates, removal and support information.
+
+1. Extract the entire ZIP to a permanent folder in your home directory.
+2. Run Launch-Athan-Time.sh, or run this once in that folder:
+     sh Launch-Athan-Time.sh
+3. You can close the terminal after launching the app.
+4. For an application-menu shortcut, run:
+     bash Install-Shortcut.sh
+   This also installs the correct application/dock icon for your user.
+   Fully exit Athan Time, then open it from your application menu.
+   If the dock still has an older generic shortcut pinned, unpin that shortcut
+   and pin Athan Time again from the application menu. No sudo is needed.
+
+Choose x64 for Intel/AMD or arm64 for ARM64. Keep all extracted files together.
+The .NET runtime is included. The launcher starts the bundled executable.
+On Ubuntu/Debian, Install-Requirements.sh installs the required OS desktop libraries
+with apt and may request administrator authentication. It does not install .NET.
+A native DEB installation also declares these OS dependencies automatically.
+
+Run Install-Shortcut.sh again if you move the folder. To remove its shortcut,
+delete athan-time.desktop from ~/.local/share/applications (or your XDG_DATA_HOME).
+Its app-owned icon is icons/hicolor/256x256/apps/athan-time.png under the same
+data directory; you can remove that file too when removing the shortcut.
+Startup errors are saved under ~/.local/state/AthanTime/launcher.log
+(or your XDG_STATE_HOME). Send errors to athantimedotnet@gmail.com.
+
+Project: https://github.com/Cophla/AthanTime.Net
+Downloads: https://github.com/Cophla/AthanTime.Net/releases
+
+First run uses OS language/time format and suggests a city; confirm or change it.
+Settings are kept when you remove the app. To remove your settings too, fully exit
+the app and run Remove-My-Settings.sh as your normal user BEFORE deleting the app.
+Type REMOVE to confirm. Do not use sudo. Other users and custom recordings are kept.

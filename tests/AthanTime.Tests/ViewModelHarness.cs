@@ -17,7 +17,7 @@ public sealed class ViewModelHarness(IPrayerConventionRepository conventions, IL
     public CountingCalculator Calculator { get; } = new();
 
     /// <summary>Creates the screen without starting the clock; an optional controlled repository exercises search concurrency.</summary>
-    public MainViewModel Create(ILocationRepository? locationRepository = null) => new(Calculator, conventions,
+    public MainViewModel Create(ILocationRepository? locationRepository = null, IPrayerCalculator? calculator = null) => new(calculator ?? Calculator, conventions,
         locationRepository ?? locations, localization, hijri, Settings,
         logger, manual, Audio, adhkar, Clock, textAdhkar, defaultAdhkar, loggingLevel,
         loginStartup, timeZones);

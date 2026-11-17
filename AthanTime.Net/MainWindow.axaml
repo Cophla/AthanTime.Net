@@ -135,6 +135,10 @@
         <Button Classes="nav" Content="{Binding [StopAudio]}" Click="OnStopAudio" Margin="4" />
       </WrapPanel>
         <TextBlock Name="SettingsStatusBanner" Text="{Binding SettingsStatus}" IsVisible="{Binding HasSettingsStatus}" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="{DynamicResource AccentTextBrush}" />
+        <Grid Name="FirstRunLocationBanner" IsVisible="{Binding NeedsLocationConfirmation}" ColumnDefinitions="*,Auto" ColumnSpacing="12" MaxWidth="1040">
+          <TextBlock Text="{Binding [FirstRunLocationHelp]}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="{Binding [ConfirmCity]}" Click="OnConfirmLocation" VerticalAlignment="Center" />
+        </Grid>
       </StackPanel>
     </Border>
 
@@ -388,6 +392,7 @@
                 <TabItem Header="{Binding NotificationsLabel}">
                   <StackPanel Spacing="10" Margin="0,12">
                     <TextBlock Classes="section" Text="{Binding [NotificationSettings]}" />
+                    <Button Name="TestPrayerReminderButton" Content="{Binding [Test]}" Click="OnTestPrayerReminder" HorizontalAlignment="Left" />
                     <TextBlock Text="{Binding [NotificationTimingHelp]}" Classes="caption" TextWrapping="Wrap" />
                     <CheckBox Name="NotificationMasterSwitch" Content="{Binding NotificationsLabel}" IsChecked="{Binding NotificationsEnabled}" />
                     <TextBlock Text="{Binding [AudioHelp]}" Classes="caption" />
@@ -437,6 +442,7 @@
                 <TabItem Header="{Binding [Adhkar]}">
                   <StackPanel Spacing="10" Margin="0,12">
                     <TextBlock Text="{Binding [PlaylistHelp]}" Classes="caption" />
+                    <Button Name="TestAdhkarAudioButton" Content="{Binding [Test]}" Click="OnTestAdhkarAudio" HorizontalAlignment="Left" />
                     <CheckBox Content="{Binding [EnableAdhkar]}" IsChecked="{Binding AdhkarEnabled}" />
                     <CheckBox Content="{Binding [RandomOrder]}" IsChecked="{Binding AdhkarRandomOrder}" />
                     <TextBlock Text="{Binding [IntervalMinutes]}" />
@@ -457,6 +463,7 @@
                     <TextBlock Text="{Binding [BundledAdhkarCaption]}" Classes="caption" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding DefaultAdhkarPreview}" TextWrapping="Wrap" MaxHeight="230" />
                     <TextBlock Text="{Binding [TextAdhkarHelp]}" Classes="caption" />
+                    <Button Name="TestTextAdhkarButton" Content="{Binding [Test]}" Click="OnTestTextAdhkar" HorizontalAlignment="Left" />
                     <CheckBox Content="{Binding [EnableTextAdhkar]}" IsChecked="{Binding TextAdhkarEnabled}" />
                     <TextBlock Text="{Binding [DisplaySeconds]}" />
                     <NumericUpDown Minimum="5" Maximum="600" Value="{Binding TextAdhkarDisplaySeconds}" Width="120" HorizontalAlignment="Left" />
@@ -504,6 +511,10 @@
                 <Button Classes="nav" Content="{Binding HelpLabel}" Click="OnHelp" HorizontalContentAlignment="Center" />
                 <Button Grid.Column="1" Classes="nav" Content="{Binding AboutLabel}" Click="OnAbout" HorizontalContentAlignment="Center" />
               </Grid>
+              <WrapPanel Margin="0,5">
+                <Button Name="ProjectPageButton" Content="{Binding [ProjectPage]}" Click="OnOpenProjectPage" Margin="0,4,8,4" />
+                <Button Name="ReleasesPageButton" Content="{Binding [ReleasesPage]}" Click="OnOpenReleasesPage" Margin="0,4,8,4" />
+              </WrapPanel>
               <Expander Header="{Binding [Feedback]}" Margin="0,5">
                 <StackPanel Spacing="10" Margin="0,10">
                   <TextBlock Text="{Binding [EmailHelp]}" Classes="caption" />

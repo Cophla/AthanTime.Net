@@ -22,7 +22,9 @@ trap 'rm -rf -- "$WORK"' EXIT
 PUBLISH="$WORK/publish"
 STAGE="$WORK/image"
 APP="$STAGE/Athan Time.app"
-OUTPUT="$REPOSITORY/artifacts/packages/AthanTime-$VERSION-$RID.dmg"
+PLATFORM="macOS-Intel-x64"
+if [[ "$RID" == "osx-arm64" ]]; then PLATFORM="macOS-AppleSilicon-arm64"; fi
+OUTPUT="$REPOSITORY/artifacts/packages/AthanTime-$VERSION-$PLATFORM.dmg"
 
 dotnet publish "$REPOSITORY/AthanTime.Net/AthanTime.Net.csproj" \
   -c Release -r "$RID" --self-contained true -p:Version="$VERSION" \
@@ -35,5 +37,9 @@ sed "s/@VERSION@/$VERSION/g; s/@NUMERIC_VERSION@/$NUMERIC_VERSION/g" "$REPOSITOR
   > "$APP/Contents/Info.plist"
 
 ln -s /Applications "$STAGE/Applications"
+cp "$PUBLISH/README.txt" "$STAGE/README.txt"
+cp "$REPOSITORY/packaging/macos/START-HERE.txt" "$STAGE/START-HERE.txt"
+cp "$REPOSITORY/packaging/Remove-My-Settings.sh" "$STAGE/Remove-My-Settings.command"
+chmod 755 "$STAGE/Remove-My-Settings.command"
 hdiutil create -volname "Athan Time $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$OUTPUT"
 echo "Created $OUTPUT"

@@ -1,5 +1,198 @@
 # Code simplicity and resource review
 
+## Uninstall completion - 2026-11-17
+
+Reuse the NSIS success callback for normal removal and successful machine-child
+completion. One silent-mode guard avoids duplicate or unattended dialogs; the
+parent's zero-exit check excludes cancellation/failure. No application
+code, native dependency, background work or new abstraction is needed. macOS/Linux
+retain native removal feedback and the unchanged self-contained package matrix.
+
+## Cleanup and checkbox alignment - 2026-11-16
+
+Remove the installer exit-code branch made unreachable by pre-elevation maintenance
+selection; install children already skip that page. Retain the user cleanup and
+file-access safeguards. Merge the duplicate checkbox styles and use state-triggered
+template-part alignment to center the existing Fluent indicator row, including
+wrapped captions; no custom control/template or runtime service is added.
+Roslyn unused-private checks found no candidates. Data migrations, JSON/XAML/DI
+callbacks, offline reference data, native recipes, assets and provenance remain.
+Old generated payloads/caches and six superseded release drafts were removed;
+compact audit/reproducer history was archived separately from active source.
+
+## Unelevated uninstall cleanup - 2026-11-16
+
+Keep user cleanup in the existing original process and reuse the existing temporary
+uninstaller/elevation relay for machine file removal. The silent child skips user
+cleanup; an already elevated interactive run disables the optional checkbox. Exclude
+the uninstaller's fragile desktop-token branch and move setup elevation after
+maintenance choice. Preserve the file-access guard in the authorized removal
+process, current-user lease, bounded retries and explicit continuation choices.
+No new helper binary, IPC, package or shared profile traversal is needed. Native
+UAC and alternate-account validation remains separate from source/recipe tests.
+
+## Package README and freshness - 2026-11-16
+
+One shared plain-text package guide is copied by the existing publish rules.
+Portable packaging places the Mac guide beside the app bundle using one explicit
+path case; other payloads retain their normal root. Existing archive/publish tests
+cover the guide and missing-guide failure across all five targets. Keep OS-specific
+startup details in the existing START-HERE files. No new application abstraction,
+service, package or resident work is introduced. Freshness uses content hashes and
+source inventory; existing release snapshots remain separate.
+
+## Ubuntu dock icon registration - 2026-11-16
+
+Use the existing PNG and shortcut helper: copy one icon into the user's XDG theme,
+add the standard icon/window-class desktop keys, and ship the PNG in both Linux
+portable ZIPs. Retain Avalonia's existing X11/XWayland assembly class, matching it
+in the portable/native entries. No application startup hook, background process,
+icon regeneration or dependency is needed. Registration stays opt-in and repeatable;
+Windows/macOS payloads and existing profiles are unaffected.
+
+## All-package refresh - 2026-11-16
+
+Reuse the existing InstallerBuilder, verified Windows setup and per-OS layouts.
+This task changes package evidence and descriptions, without adding application
+logic, dependencies or deployment modes. Keep current artifacts separate from
+historical release snapshots and verify every supported CPU's native payload.
+Native DEB/DMG and desktop behavior still require matching hosts. The canonical
+engineering guide already covers this workflow; no additional agent rules are needed.
+
+## Setup maintenance and explicit shutdown - 2026-11-16
+
+Reuse the existing same-user pipe and Release lease for a bounded pre-host shutdown
+command; no new listener, dependency, resident timer or force-kill. Dispatch the exit
+on the UI thread after startup, acknowledge before stopping the listener, and wait
+for host shutdown to release the lease. The small published capability marker avoids
+launching older executables with an unknown argument. Setup delegates Uninstall to
+the selected registered copy before elevation; installation children skip maintenance. Windows retains Restart Manager/file guards for legacy or
+other-user processes. Unix native quit workflows and all five targets remain.
+Preferences stay in the existing special-folder location; a future device-data
+split needs explicit migration/cleanup tests. Process tests use isolated identities.
+
+## Uninstall lifecycle fix - 2026-11-16
+
+One NSIS macro now supplies both installer and uninstaller graceful shutdown, retaining selected-file scope and existing guards. Cleanup returns a small shared result enum instead of losing failure causes in a boolean. The existing user-token launcher captures immediate native errors and retains bounded waits/handle cleanup. Optional cleanup has explicit Retry/continue/Abort handling, so cleanup failure cannot trap the user in uninstall. Busy retries are bounded; no new app timer, package or filesystem sweep is introduced. A focused Sandbox procedure exercises the native checkbox and lifecycle separately from pure tests.
+
+
+## Beta.13 preparation - 2026-11-16
+
+This release preparation changes shared version/release descriptions and rebuilds existing recipes. No application abstraction, dependency, timer or native deployment mode changes. Regional defaults and cleanup retain their separate responsibilities and user-scoped safeguards. Portable-only helper files are reviewed separately from the common setup payload; all five supported architectures remain self-contained.
+
+
+## Regional defaults and cleanup - 2026-11-15
+
+FirstRunDefaults owns only absent-profile hints, using the existing SQLite repository and injected TZDB. It does not add a runtime network lookup or catalog import. A bounded single-row query handles aliases and region preference. UserProfileCleanup owns only explicit known-file deletion; it does not reuse normal settings loading or create host/media state. Windows launch and cleanup share the existing native user-token function through one NSIS macro. A single Bash consent helper serves Mac and Linux. Separate responsibilities remain separate files; no new packages, timers or broad filesystem deletion are introduced.
+
+
+## Setup lifecycle - 2026-11-15
+
+2026-11-15 setup lifecycle review: reuse Windows Restart Manager and the bundled NSIS System plug-in instead of a new IPC protocol, helper process or dependency. Shared startup gains only an optional one-time show override. Keep bounded lock polling, native shutdown discrimination, UAC parent handoff, shell-user environment/handle cleanup and legacy failure paths; these are necessary lifecycle/platform safeguards.
+
+## About and beta.12 preparation — 2026-11-15
+
+AboutWindow is kept in AppWindows.cs beside the other secondary windows, reusing
+the theme/card base and existing browser/error callback. It owns two underlined
+URL buttons and a bound summary. Decorations belong to each window's dispatcher.
+The summaries are in the existing eight-language JSON catalog. Information dialogs
+retain their distinct confirmation/error role, and portable ZIP creation retains
+its separate build responsibility. No dependency or general dialog framework was
+added; further file merging would combine unrelated UI and packaging lifecycles.
+
+## Public project links — 2026-11-15
+
+Two public constants provide app project/release URLs. Existing OS URI launching
+and shared information windows handle browser navigation and failures. About and
+support drafts reuse those constants. Package metadata and documentation record
+the approved URLs. This adds no HTTP polling service or package dependency.
+
+## Reminder tests — 2026-11-15
+
+Three UI actions reuse the audio adapter, formatted prayer-alert record and
+shared popup events. One preview flag in the existing reading scheduler allows
+manual text to expire while automatic settings are disabled/paused. Existing
+Reset/Dismiss paths clear that state and the same application clock drives it.
+No new service, dependency or timer was added. Reminder history remains confined
+to scheduled dispatch.
+
+## Portable launchers — 2026-11-15
+
+One archive writer owns portable layout and ZIP permissions, reusing the native
+macOS metadata template. A bounded ZIP central-directory metadata adjustment
+sets Unix creator flags because .NET writes the build-host platform and exposes
+no creator setter. It edits only the builder's own ZIP and rejects unsupported
+Zip64 directory/count sizes explicitly. Small OS-guarded scripts launch the apphost directly
+and add an optional Linux menu shortcut or OS-library setup. Script tests use
+temporary paths and fake native commands. Settings normalization filters the
+removed bundled Alhamdulillah identifier while preserving custom paths.
+Dynamic clock/countdown/next-prayer/progress values now use the existing Set
+helper, replacing the ordinary-tick tuple/comparisons and covering date-refresh
+notifications through the same assignments.
+
+## Interactive monitor dragging — 2026-11-14
+
+The correction keeps geometry in the existing service/window. A Windows-only
+observer through Avalonia's existing Win32 hook sets one move/resize flag; it
+never handles native messages. Entry pauses fitting and intermediate capture,
+exit queues the existing fit, and hide/close clear/unsubscribe the observer.
+No new timer, native dependency, service, file or runtime graphics option is added.
+
+The window-hosting monitor replaces top-left-based selection. Removing the
+position-event refit and its cached work-area field eliminates a feedback path
+while dragging across displays. The portable size/position calculation remains
+unchanged. Regression tests call the real callback in the headless UI; a separate
+native probe covers actual move loops and rendered header/tabs. Native results
+and remaining limits are in [packaging](PACKAGING.md#interactive-monitor-dragging-2026-11-14).
+
+## Window fitting — 2026-11-14
+
+The existing position service now also owns a pure size/position calculation,
+using one small shared work-area selection loop. A named tuple carries the
+position, client size and effective minimum without introducing another service
+or file. The main window retains its XAML minimums, supplies native decoration
+measurements and coalesces geometry work on the existing dispatcher. There are
+no new runtime dependencies, timers, background workers or profile fields.
+
+Fitting skips hidden/non-normal windows, uses desktop rather than render scaling
+and writes no profile during resize/drag. It only changes geometry when needed;
+actual changes are debug logged. Position persistence and native-platform limits
+remain explicit. Existing lifecycle regressions plus new geometry and real-window
+event cases cover the change. See [dated verification](PACKAGING.md#window-fitting-2026-11-14).
+
+## Release cleanup — 2026-11-11
+
+`AppWindows.cs` now groups the shared secondary-window base and its two small
+popup implementations, with the same public types/bindings and lifecycle. The
+seasonal-rule editor and text settings use expanded setters so clamping, equality
+checks, assignment and callbacks are visible in order. Distinct search, audio,
+settings, activation and window-position responsibilities remain separate; their
+failure/concurrency/platform safeguards have concrete uses.
+
+The redundant portable PowerShell wrapper and its three wrapper-only test cases
+are removed. The existing C# builder remains the single portable entry point.
+Platform download naming is a direct five-case mapping; native shell recipes
+retain only the corresponding OS-specific spelling. Self-contained publish
+guards extend the existing target rather than introducing a new framework,
+dependency, resident service or packaging abstraction.
+
+Obsolete generated intermediates are removed before clean verification. Required
+compressed catalogs, native/media provenance, icons, licenses and regression
+procedures remain. This is a targeted readability/packaging cleanup, not evidence
+of lower whole-process RAM or an exhaustive proof that every path is minimal.
+See [current packaging evidence](PACKAGING.md#release-cleanup-2026-11-11).
+
+## .NET 11 upgrade — 2026-11-10
+
+The framework remains one shared property for all six solution projects. Updated
+hosting/SQLite packages use the existing service and data-access code; no new
+abstraction, timer, runtime network operation or native integration is needed.
+The existing configuration, logging, search, audio decoder, UI and lifecycle
+regressions exercise the new runtime. The macOS recipe fixture additionally
+checks the supported OS baseline of 15. Native SQLite assets and notices are
+reviewed for all five RIDs. See [.NET 11 packaging evidence](PACKAGING.md#net-11-upgrade-2026-11-10)
+for actual checks and native limitations; older measurements remain historical.
+
 ## Beta.7 support contact — 2026-11-08
 
 Only the shipped contact setting, existing fallback and shared release version
@@ -201,3 +394,5 @@ This source review is not native desktop certification. Windows signing/Applicat
 Control remains unresolved; macOS/Linux execution and native desktop integration
 remain unverified. Current installer evidence belongs in
 [packaging](PACKAGING.md#repository-wide-simplicity-review-2026-11-04).
+
+Beta.14 preparation changes release identity and evidence only; existing runtime and packaging safeguards remain. No new dependencies or abstractions.

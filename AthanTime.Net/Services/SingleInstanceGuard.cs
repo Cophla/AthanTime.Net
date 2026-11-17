@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -8,7 +9,7 @@ using System.Text;
 
 namespace AthanTime.Net.Services;
 
-/// <summary>Owns the per-user Release lease and local window-activation channel; Debug startup permits concurrent runs.</summary>
+/// <summary>Owns the per-user Release lease and local activation/shutdown channel; Debug startup permits concurrent runs.</summary>
 public sealed class SingleInstanceGuard : IDisposable
 {
     // Keep these wire values stable: a running copy may receive a request from an updated executable.
@@ -16,6 +17,7 @@ public sealed class SingleInstanceGuard : IDisposable
     private const byte ShowWindowCommand = 1;
     private const byte AcceptedResponse = 1;
     private const byte ReceiptCommand = 2;
+    private const byte ShutdownCommand = 3;
 
     private Mutex? _mutex;
     private readonly string _applicationId;
@@ -28,6 +30,42 @@ public sealed class SingleInstanceGuard : IDisposable
     private Exception? _activationFailure;
     private bool _activationPending;
     private bool _activationClosed;
+    private Action? _shutdownHandler;
+    private bool _shutdownPending;
+
+    /// <summary>Connects installer shutdown to a nonblocking UI-dispatched exit after startup.</summary>
+    public void RegisterShutdownHandler(Action shutdown)
+    {
+        ArgumentNullException.ThrowIfNull(shutdown);
+        bool pending;
+        lock (_activationGate)
+        {
+            if (_activationClosed) return;
+            _shutdownHandler = shutdown;
+            pending = _shutdownPending;
+            _shutdownPending = false;
+        }
+        if (pending) shutdown();
+    }
+
+    /// <summary>Requests graceful same-user exit and waits up to twenty seconds for the primary lease to be released.</summary>
+    public static async Task<bool> RequestShutdownAsync(string applicationId = "org.athantime.net", CancellationToken cancellationToken = default)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        if (!await RequestCommandAsync(ShutdownCommand, applicationId, timeout.Token, null).ConfigureAwait(false)) return false;
+        try
+        {
+            while (true)
+            {
+                // Acquire and dispose on the same thread, before the next await.
+                using (var lease = TryAcquire(applicationId))
+                    if (lease is not null) return true;
+                await Task.Delay(100, timeout.Token).ConfigureAwait(false);
+            }
+        }
+        catch (Exception exception) when (exception is OperationCanceledException or UnauthorizedAccessException or IOException) { return false; }
+    }
 
     private SingleInstanceGuard(Mutex? mutex, string applicationId) { _mutex = mutex; _applicationId = applicationId; }
 
@@ -123,6 +161,10 @@ public sealed class SingleInstanceGuard : IDisposable
     /// <summary>Requests activation without creating a host or profile; a missing/older primary or denied channel returns false within five seconds.</summary>
     public static async Task<bool> RequestActivationAsync(string applicationId = "org.athantime.net",
         CancellationToken cancellationToken = default, Action<int>? allowForeground = null)
+        => await RequestCommandAsync(ShowWindowCommand, applicationId, cancellationToken, allowForeground).ConfigureAwait(false);
+
+    private static async Task<bool> RequestCommandAsync(byte command, string applicationId,
+        CancellationToken cancellationToken, Action<int>? allowForeground)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(applicationId);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -141,9 +183,19 @@ public sealed class SingleInstanceGuard : IDisposable
                     if (BinaryPrimitives.ReadInt32LittleEndian(greeting) != ActivationSignature) return false;
                     int processId = BinaryPrimitives.ReadInt32LittleEndian(greeting.AsSpan(4));
                     if (processId <= 0) return false;
-                    if (allowForeground is not null) allowForeground(processId);
-                    else if (OperatingSystem.IsWindows()) AllowSetForegroundWindow(processId);
-                    await pipe.WriteAsync(new byte[] { ShowWindowCommand }, timeout.Token).ConfigureAwait(false);
+                    if (command == ShowWindowCommand)
+                    {
+                        if (allowForeground is not null) allowForeground(processId);
+                        else if (OperatingSystem.IsWindows()) AllowSetForegroundWindow(processId);
+                    }
+                    else
+                    {
+                        // Scopes share a per-user identity. Shutdown must still target this installation.
+                        using var primary = Process.GetProcessById(processId);
+                        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                        if (!string.Equals(primary.MainModule?.FileName, Environment.ProcessPath, comparison)) return false;
+                    }
+                    await pipe.WriteAsync(new byte[] { command }, timeout.Token).ConfigureAwait(false);
                     var accepted = new byte[1];
                     await pipe.ReadExactlyAsync(accepted, timeout.Token).ConfigureAwait(false);
                     // Let the server close only after the acknowledgement was read; a show request is idempotent.
@@ -159,7 +211,7 @@ public sealed class SingleInstanceGuard : IDisposable
             }
         }
         catch (Exception exception) when (exception is IOException or SocketException or UnauthorizedAccessException or OperationCanceledException
-            or PlatformNotSupportedException) { return false; }
+            or PlatformNotSupportedException or System.ComponentModel.Win32Exception or InvalidOperationException or ArgumentException) { return false; }
     }
 
     private NamedPipeServerStream CreateActivationPipe() => new(ActivationPipeName(_applicationId), PipeDirection.InOut,
@@ -180,9 +232,30 @@ public sealed class SingleInstanceGuard : IDisposable
                 await pipe.WriteAsync(greeting, timeout.Token).ConfigureAwait(false);
                 var command = new byte[1];
                 await pipe.ReadExactlyAsync(command, timeout.Token).ConfigureAwait(false);
-                bool accepted = command[0] == ShowWindowCommand && DispatchActivationRequest();
+                bool shutdown = command[0] == ShutdownCommand;
+                bool accepted;
+                if (shutdown) { lock (_activationGate) accepted = !_activationClosed; }
+                else accepted = command[0] == ShowWindowCommand && DispatchActivationRequest();
                 await pipe.WriteAsync(new byte[] { accepted ? AcceptedResponse : (byte)0 }, timeout.Token).ConfigureAwait(false);
                 await pipe.ReadExactlyAsync(new byte[1], timeout.Token).ConfigureAwait(false);
+                // Acknowledge before requesting exit, because desktop shutdown stops this listener.
+                if (shutdown && accepted)
+                {
+                    Action? handler;
+                    lock (_activationGate)
+                    {
+                        if (_activationClosed) continue;
+                        handler = _shutdownHandler;
+                        if (handler is null) _shutdownPending = true;
+                    }
+                    try { handler?.Invoke(); }
+                    catch (Exception exception)
+                    {
+                        Action<Exception>? report;
+                        lock (_activationGate) { report = _activationError; }
+                        report?.Invoke(exception);
+                    }
+                }
             }
             catch (Exception exception) when (exception is IOException or SocketException or UnauthorizedAccessException or OperationCanceledException) { }
             catch (ObjectDisposedException) when (stopping.IsCancellationRequested) { }
@@ -257,6 +330,8 @@ public sealed class SingleInstanceGuard : IDisposable
         {
             _activationClosed = true;
             _activationHandler = null;
+            _shutdownHandler = null;
+            _shutdownPending = false;
             _activationError = null;
             _activationPending = false;
             stop = _activationStop; pipe = _activationPipe; task = _activationTask;

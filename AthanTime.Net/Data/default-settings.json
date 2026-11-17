@@ -2,6 +2,7 @@
   "schemaVersion": 5,
   "locationId": "geonames-276781",
   "language": "en",
+  "locationNeedsConfirmation": false,
   "useAutomaticConvention": true,
   "methodId": "MWL",
   "asrJuristic": "Standard",
@@ -31,6 +32,6 @@
   "summerTimeOverrides": {},
   "savedLocations": [],
   "audioVolume": 80,
-  "adhkar": { "enabled": false, "randomOrder": false, "intervalMinutes": 30, "audioFiles": ["bundled:takbeer", "bundled:alhamdulillah"] },
+  "adhkar": { "enabled": false, "randomOrder": false, "intervalMinutes": 30, "audioFiles": ["bundled:takbeer"] },
   "textAdhkar": { "enabled": false, "displaySeconds": 20, "pauseMinutes": 30, "texts": [] }
 }

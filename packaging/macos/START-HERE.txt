@@ -1,0 +1,31 @@
+Athan Time for macOS 15 or later
+
+Read README.txt beside the app for first-run settings, updates, removal and support.
+
+1. For a ZIP, extract it completely using Archive Utility. For a DMG, open the image.
+2. Drag Athan Time.app into Applications, then double-click it.
+3. You can also double-click Launch-Athan-Time.command beside the extracted app.
+   After the app opens, you can close Terminal.
+
+Choose Apple Silicon for an M-series Mac, or Intel for an Intel Mac.
+The .NET runtime is included. Open the app itself to start it.
+Keep the app's contents together.
+
+To update, fully quit Athan Time (including its menu-bar icon) before replacing
+the app in the same location. Your per-user settings are kept. If you move the app,
+disable and re-enable Start on login so it uses the new location.
+
+If permissions were lost during extraction, run this once from the extracted folder:
+  bash Launch-Athan-Time.command
+
+This beta is unsigned and not notarized. macOS may require approval through
+System Settings > Privacy & Security. Follow your organization's security policy.
+If it fails, send the exact error and your macOS version to athantimedotnet@gmail.com.
+
+Project: https://github.com/Cophla/AthanTime.Net
+Downloads: https://github.com/Cophla/AthanTime.Net/releases
+
+First run uses OS language/time format and suggests a city; confirm or change it.
+Settings are kept when you remove the app. To remove your settings too, fully exit
+the app and run Remove-My-Settings.command as your normal user BEFORE deleting the app.
+Type REMOVE to confirm. Do not use sudo. Other users and custom recordings are kept.

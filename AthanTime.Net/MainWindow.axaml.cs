@@ -84,9 +84,10 @@ public partial class MainWindow : Window
     /// <summary>Only hide completely when the desktop can expose a tray icon.</summary>
     public bool CanHideToTray { get; set; }
 
-    /// <summary>Applies minimized startup while preserving a taskbar route when the tray cannot hide the window.</summary>
-    public void PrepareStartupVisibility(bool startMinimized)
+    /// <summary>Applies minimized startup unless setup requests a visible window, without changing saved preferences.</summary>
+    public void PrepareStartupVisibility(bool startMinimized, bool showWindow = false)
     {
+        startMinimized &= !showWindow;
         if (!startMinimized) return;
         WindowState = WindowState.Minimized;
         if (CanHideToTray && ViewModel.CloseToTray) Opened += HideAfterStartup;
@@ -303,8 +304,12 @@ public partial class MainWindow : Window
     private void OnMoveAdhkarUp(object? sender, RoutedEventArgs args) => ViewModel.MoveAdhkarUp();
     private void OnAddAdhkarText(object? sender, RoutedEventArgs args) => ViewModel.AddAdhkarText();
     private void OnUpdateAdhkarText(object? sender, RoutedEventArgs args) => ViewModel.UpdateAdhkarText();
+    private void OnConfirmLocation(object? sender, RoutedEventArgs args) => ViewModel.ConfirmLocation();
     private void OnRemoveAdhkarText(object? sender, RoutedEventArgs args) => ViewModel.RemoveAdhkarText();
     private async void OnStopAudio(object? sender, RoutedEventArgs args) => await ViewModel.StopAudioAsync();
+    private async void OnTestPrayerReminder(object? sender, RoutedEventArgs args) => await ViewModel.TestPrayerReminderAsync();
+    private async void OnTestAdhkarAudio(object? sender, RoutedEventArgs args) => await ViewModel.TestAdhkarAudioAsync();
+    private void OnTestTextAdhkar(object? sender, RoutedEventArgs args) => ViewModel.TestTextAdhkar();
     private async void OnPlayBundledAthan(object? sender, RoutedEventArgs args) =>
         await ViewModel.PreviewAudioAsync("bundled:adhan");
     private async void OnPreviewAdhkar(object? sender, RoutedEventArgs args) => await ViewModel.PreviewAudioAsync(ViewModel.SelectedAdhkarFile);
@@ -372,9 +377,25 @@ public partial class MainWindow : Window
 
     /// <summary>Shows application and version information.</summary>
     private async void OnAbout(object? sender, RoutedEventArgs eventArgs) =>
-        await ShowInformationAsync(ViewModel.AboutLabel, ViewModel.AboutText);
+        await new AboutWindow(ViewModel, OpenProjectPageAsync).ShowDialog(this);
 
     private async void OnSuggestion(object? sender, RoutedEventArgs args) => await OpenEmailAsync(SupportMessage.Suggestion);
+    private async void OnOpenProjectPage(object? sender, RoutedEventArgs args) => await OpenProjectPageAsync(App.ProjectUrl);
+    private async void OnOpenReleasesPage(object? sender, RoutedEventArgs args) => await OpenProjectPageAsync(App.ReleasesUrl);
+
+    private async Task OpenProjectPageAsync(string url)
+    {
+        try
+        {
+            if (!await Launcher.LaunchUriAsync(new Uri(url))) throw new InvalidOperationException("No browser accepted the project link.");
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "Could not open project link {Url}", url);
+            await ShowInformationAsync(ViewModel["ProjectPage"], ViewModel["BrowserOpenError"] + "\n\n" + url);
+        }
+    }
+
     private async void OnComplaint(object? sender, RoutedEventArgs args) => await OpenEmailAsync(SupportMessage.Complaint);
 
     private async void OnExportSettings(object? sender, RoutedEventArgs args)
@@ -541,10 +562,17 @@ public partial class MainWindow : Window
         await dialog.ShowDialog(this);
     }
 
-    /// <summary>Hides the window instead of exiting when close-to-tray is enabled.</summary>
+    /// <summary>Preserves close-to-tray while allowing native Windows update/session shutdown.</summary>
     private void OnClosing(object? sender, WindowClosingEventArgs eventArgs)
     {
         SaveWindowPosition();
+        // Restart Manager must finish the desktop lifetime, including tray-only operation.
+        if (OperatingSystem.IsWindows() && !eventArgs.IsProgrammatic &&
+            eventArgs.CloseReason is WindowCloseReason.ApplicationShutdown or WindowCloseReason.OSShutdown)
+        {
+            _logger.LogInformation("Accepting native Windows shutdown: {Reason}", eventArgs.CloseReason);
+            return;
+        }
         if (ViewModel is null) return;
         if (!ForceClose && ViewModel.CloseToTray)
         {

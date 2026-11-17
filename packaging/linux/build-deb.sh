@@ -35,6 +35,9 @@ mkdir -p "$STAGE/DEBIAN" "$STAGE/opt/athan-time" "$STAGE/usr/bin" \
   "$STAGE/usr/share/applications" "$STAGE/usr/share/icons/hicolor/256x256/apps" "$OUTPUT"
 cp -a "$PUBLISH/." "$STAGE/opt/athan-time/"
 chmod 755 "$STAGE/opt/athan-time/AthanTime.Net"
+mkdir -p "$STAGE/usr/share/athan-time"
+cp "$REPOSITORY/packaging/Remove-My-Settings.sh" "$STAGE/usr/share/athan-time/Remove-My-Settings.sh"
+chmod 755 "$STAGE/usr/share/athan-time/Remove-My-Settings.sh"
 ln -s /opt/athan-time/AthanTime.Net "$STAGE/usr/bin/athan-time"
 cp "$REPOSITORY/AthanTime.Net/Assets/athan-icon.png" \
   "$STAGE/usr/share/icons/hicolor/256x256/apps/athan-time.png"
@@ -43,5 +46,5 @@ sed "s/@VERSION@/$DEBIAN_VERSION/g; s/@RELEASE_VERSION@/$VERSION/g; s/@ARCH@/$AR
   "$REPOSITORY/packaging/linux/control.template" > "$STAGE/DEBIAN/control"
 sed "s/@VERSION@/$VERSION/g" "$REPOSITORY/packaging/linux/athan-time.desktop" \
   > "$STAGE/usr/share/applications/athan-time.desktop"
-dpkg-deb --root-owner-group --build "$STAGE" "$OUTPUT/AthanTime-$VERSION-$ARCH.deb"
-echo "Created $OUTPUT/AthanTime-$VERSION-$ARCH.deb"
+dpkg-deb --root-owner-group --build "$STAGE" "$OUTPUT/AthanTime-$VERSION-Linux-${RID#linux-}.deb"
+echo "Created $OUTPUT/AthanTime-$VERSION-Linux-${RID#linux-}.deb"

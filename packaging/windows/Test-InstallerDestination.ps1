@@ -14,7 +14,7 @@ param(
 
 if ($env:USERNAME -ne 'WDAGUtilityAccount') { throw 'Run only in a fresh Windows Sandbox.' }
 $ErrorActionPreference = 'Stop'
-$release = [regex]::Match([IO.Path]::GetFileName($Installer), '^AthanTime-(?<version>[0-9]+(?:\.[0-9]+){1,3}(?:-[A-Za-z0-9.-]+)?)-win-x64-setup\.exe$')
+$release = [regex]::Match([IO.Path]::GetFileName($Installer), '^AthanTime-(?<version>[0-9]+(?:\.[0-9]+){1,3}(?:-[A-Za-z0-9.-]+)?)-Windows-x64-Setup\.exe$')
 if (-not $release.Success) { throw 'Use the versioned filename produced by InstallerBuilder.' }
 $expectedVersion = $release.Groups['version'].Value
 if (-not ('DestinationControls' -as [type])) {

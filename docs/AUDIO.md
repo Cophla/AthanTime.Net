@@ -33,14 +33,18 @@ reminders unpaused. Missed reminders during sleep or exit are not replayed.
 
 Use the **Athan audio** panel to select one local Ogg Vorbis (.ogg) per prayer or sunrise.
 Enable the master reminders switch, that event's at-time reminder, and its audio
-checkbox. An empty custom path uses the bundled CC0 Athan Ogg; **Clear** restores it.
-Before/after reminders remain silent. **Play** previews a file;
+checkbox. An empty custom path uses the bundled Nasser Alqatami Athan Ogg; **Clear** restores it.
+The defaults use the supplied NasserAlqatamiAthan.ogg and
+NasserAlqatamiAllahoAkbar.ogg recordings. Existing custom selections continue
+to use their saved files. Recording provenance is listed in
+[third-party notices](../THIRD-PARTY-NOTICES.md). Before/after reminders remain
+silent. **Play** previews a file;
 **Stop audio** is also available in the tray menu and prayer popup.
 Volume changes apply to the next playback. The tray can also play the bundled
 Athan or Takbeer immediately, or enable/disable each automatic audio category.
 
-Under **Adhkar recordings**, two bundled CC0 clips (Takbeer and Alhamdulillah)
-are included by default; add multiple custom Ogg Vorbis files if desired. One file plays each interval.
+Under **Adhkar recordings**, the bundled Nasser Alqatami Takbeer clip
+is included by default; add multiple custom Ogg Vorbis files if desired. One file plays each interval.
 Sequential mode repeats the list; random mode chooses one entry per interval
 (repeats are possible). Move up changes the sequential order. Busy intervals
 are skipped, and prayer audio interrupts Adhkar. Editing the list or its interval
@@ -86,6 +90,24 @@ The engine/device are created only for playback, streams are decoded incremental
 and all playback resources are released on completion or Stop. Native operations
 run off the UI thread; callbacks queue cleanup instead of disposing their own device.
 
+## Test buttons
+
+Each Audio & Adhkar tab has a **Test** button:
+
+- **Prayer reminders** shows the next actual prayer's popup and plays its selected
+  audio when the master audio switch and that prayer's audio switch are enabled.
+- **Adhkar recordings** plays the selected recording, otherwise the first playlist
+  entry, otherwise bundled Takbeer. Stop audio ends playback.
+- **Text Adhkar** displays the selected text, otherwise the first saved text,
+  otherwise a current bundled reading. It closes after the configured display
+  duration, including when automatic readings are disabled or reminders are paused.
+  Dismissal starts a full reading pause without advancing the automatic rotation.
+
+Tests run immediately without enabling automatic reminders, writing settings or
+recording prayer-reminder history. A prayer test dismisses an existing reading
+and uses the same themed popup as automatic reminders. File/device failures use
+the existing audio status messages. The shared app clock manages text-test expiry.
+
 ## Text Adhkar
 
 The **Text Adhkar** tab supports adding, editing and removing complete texts,
@@ -119,3 +141,27 @@ not the content of custom Adhkar texts.
 
 All settings use the existing per-OS-user JSON file. Audio/text schedules run only
 while the application is running and the computer is awake; these are not OS alarms.
+
+## Default recording verification (2026-11-15)
+
+Replaced bundled Athan and Takbeer with the supplied Nasser Alqatami Ogg files.
+Two asset-identity cases pin their SHA-256 hashes, and the complete streaming
+decode test also checks decoder errors. Existing tests cover non-silent finite
+samples, EOF/restart, seeks, disposal, default prayer playback, bundled playlist
+identities and saved custom paths. No runtime playback abstraction was added.
+
+On Windows x64, SDK 11.0.100, Debug and Release each built with zero warnings/errors
+and passed all 463 tests. Build commands used -p:UsedAvaloniaProducts= to bypass
+the build-telemetry task after its sandbox-denied local log write. These tests
+decode without an audio device. Actual speaker playback and matching-OS
+macOS/Linux audio remain unverified for the supplied recordings. All five
+platforms consume the same Ogg assets through the existing streaming adapter.
+Release creation is deferred until requested by the user.
+
+The former bundled Alhamdulillah clip was removed at the user’s request on
+November 15. Loaded/imported playlists drop only its retired bundled identifier,
+case-insensitively; custom recording paths remain available.
+
+After removing the former bundled Alhamdulillah entry and adding the desktop
+launchers, the full Windows Debug and Release suites each passed 477 tests.
+See the dated desktop-launcher evidence in [packaging](PACKAGING.md#desktop-launchers-2026-11-15).

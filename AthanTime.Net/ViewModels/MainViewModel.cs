@@ -131,6 +131,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
     private AppSettings _settings;
     private LocationInfo _location;
     private DateOnly _selectedDate;
+    private string _currentClock = "";
+    private string _nextPrayerName = "";
+    private string _nextPrayerTime = "";
+    private string _countdown = "";
+    private double _dayProgress;
     private string _searchText = "";
     private int _searchRevision;
     private Task _searchTask = Task.CompletedTask;
@@ -548,6 +553,17 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
     public string OfflineLabel => $"{T("Offline")} · {_locationRepository.Count:N0}";
     public string LocationName => _location.Name(_settings.Language);
     public string CountryName => _location.CountryName(_settings.Language);
+    /// <summary>New OS-derived city hints must be reviewed before automatic prayer reminders.</summary>
+    public bool NeedsLocationConfirmation => _settings.LocationNeedsConfirmation;
+
+    /// <summary>Accepts the displayed city without replaying reminders due before confirmation.</summary>
+    public void ConfirmLocation()
+    {
+        if (!_settings.LocationNeedsConfirmation) return;
+        _settings.LocationNeedsConfirmation = false;
+        _reminderNotBeforeUtc = _timeProvider.GetUtcNow();
+        SaveAndRefresh(calculationChanged: false);
+    }
     public string Coordinates => $"{_location.Latitude:0.####}, {_location.Longitude:0.####}";
     public string ConventionDescription
     {
@@ -562,17 +578,18 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
     public string HelpText => T("HelpText") + "\n\n" + T("SummerDraftHelp") + "\n\n" + T("LocationAdjustmentsHelp")
         + "\n\n" + T("SettingsTransferHelp") + "\n\n" + T("CoordinateHelp") + "\n\n" + T("AudioHelp")
         + "\n\n" + T("PlaylistHelp") + "\n\n" + T("TextAdhkarHelp") + "\n\n" + T("TrayUnavailable");
-    public string AboutText => string.Format(CultureInfo.InvariantCulture, T("AboutText"), AppVersion);
+    /// <summary>Localized product overview; the About window renders AppVersion separately with LTR direction.</summary>
+    public string AboutText => T("AboutText");
     public string AppVersion => App.ReleaseVersion;
-    public string CurrentClock { get; private set; } = "";
+    public string CurrentClock { get => _currentClock; private set => Set(ref _currentClock, value); }
     public string DisplayDate { get; private set; } = "";
     public string HijriDate { get; private set; } = "";
     public string QiblaValue { get; private set; } = "";
     public string MidnightValue { get; private set; } = "";
-    public string NextPrayerName { get; private set; } = "";
-    public string NextPrayerTime { get; private set; } = "";
-    public string Countdown { get; private set; } = "";
-    public double DayProgress { get; private set; }
+    public string NextPrayerName { get => _nextPrayerName; private set => Set(ref _nextPrayerName, value); }
+    public string NextPrayerTime { get => _nextPrayerTime; private set => Set(ref _nextPrayerTime, value); }
+    public string Countdown { get => _countdown; private set => Set(ref _countdown, value); }
+    public double DayProgress { get => _dayProgress; private set => Set(ref _dayProgress, value); }
 
     /// <summary>Localized persistence, recovery and transfer outcome; never silently hides failures.</summary>
     public string SettingsStatus => T(_settingsService.StatusKey.Length > 0 ? _settingsService.StatusKey : _settingsActionStatusKey);
@@ -651,6 +668,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         StoreLocationAdjustments();
         _location = result.Location;
         _settings.LocationId = _location.Id;
+        if (_settings.LocationNeedsConfirmation)
+        {
+            _settings.LocationNeedsConfirmation = false;
+            _reminderNotBeforeUtc = _timeProvider.GetUtcNow();
+        }
         LoadLocationAdjustments();
         _summerDraftZone = "";
         _selectedSavedLocation = _settings.SavedLocations.FirstOrDefault(item => item.Id.Equals(_location.Id, StringComparison.OrdinalIgnoreCase));
@@ -752,14 +774,13 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         }
         else
         {
-            var previous = (CurrentClock, Countdown, DayProgress, NextPrayerName, NextPrayerTime);
+            // Setters notify changed values on every refresh path, including date/clock jumps.
             RefreshDynamicValues();
-            if (previous.CurrentClock != CurrentClock) OnPropertyChanged(nameof(CurrentClock));
-            if (previous.Countdown != Countdown) OnPropertyChanged(nameof(Countdown));
-            if (previous.DayProgress != DayProgress) OnPropertyChanged(nameof(DayProgress));
-            if (previous.NextPrayerName != NextPrayerName) OnPropertyChanged(nameof(NextPrayerName));
-            if (previous.NextPrayerTime != NextPrayerTime) OnPropertyChanged(nameof(NextPrayerTime));
         }
+        // Explicit text tests expire even while automatic reminders are paused or disabled.
+        var textPreview = _textAdhkarScheduler.IsPreview;
+        if (textPreview && _textAdhkarScheduler.Tick(_settings.TextAdhkar, nowUtc))
+            TextAdhkarChanged?.Invoke(this, _textAdhkarScheduler.CurrentText);
         if (NotificationsPaused) return;
         CheckPrayerAlert(LocationNow(), nowUtc);
         var file = _adhkarScheduler.TakeDue(_settings.Adhkar, nowUtc, _audioPlayer.IsBusy);
@@ -771,7 +792,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
             _defaultDhikrTexts = _defaultAdhkar.GetTexts(_settings.Language, localHour);
             OnPropertyChanged(nameof(DefaultAdhkarPreview));
         }
-        if (_textAdhkarScheduler.Tick(_settings.TextAdhkar, nowUtc, _defaultDhikrTexts))
+        if (!textPreview && _textAdhkarScheduler.Tick(_settings.TextAdhkar, nowUtc, _defaultDhikrTexts))
             TextAdhkarChanged?.Invoke(this, _textAdhkarScheduler.CurrentText);
     }
 
@@ -866,7 +887,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private void CheckPrayerAlert(DateTime now, DateTimeOffset nowUtc)
     {
-        if (!_settings.NotificationsEnabled || _currentDaily is null
+        if (_settings.LocationNeedsConfirmation || !_settings.NotificationsEnabled || _currentDaily is null
             || _currentDaily.Date != DateOnly.FromDateTime(now)) return;
         // Adjacent days are required for before/after reminders that cross local midnight.
         foreach (var prayer in Enumerable.Range(-1, 3).SelectMany(offset => Calculate(_currentDaily.Date.AddDays(offset)).Times))
@@ -1013,11 +1034,18 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         }
         _settingsService.Save(_settings);
 
-        var prayerName = PrayerName(prayer.Prayer);
         var notification = _settings.PrayerNotifications[prayer.Prayer];
         if (moment == PrayerAlertMoment.AtTime && _settings.PrayerAudioEnabled && notification.AudioEnabled)
             _ = _audioPlayer.PlayAsync(BundledAudio.Resolve(string.IsNullOrWhiteSpace(notification.AudioPath)
                 ? "bundled:adhan" : notification.AudioPath), _settings.AudioVolume);
+        PrayerDue?.Invoke(this, CreatePrayerAlert(prayer, moment));
+        _logger.LogInformation("Raised {Moment} reminder for {Prayer} at {LocationId}", moment, prayer.Prayer, _location.Id);
+    }
+
+    private PrayerAlert CreatePrayerAlert(PrayerTime prayer, PrayerAlertMoment moment)
+    {
+        var prayerName = PrayerName(prayer.Prayer);
+        var notification = _settings.PrayerNotifications[prayer.Prayer];
         var minutes = moment == PrayerAlertMoment.Before ? notification.MinutesBefore : notification.MinutesAfter;
         // Share delivery/history identities while keeping sunrise separate in user-facing wording.
         var sunrise = prayer.Prayer == Prayer.Sunrise;
@@ -1030,10 +1058,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         var message = moment == PrayerAlertMoment.AtTime
             ? string.Format(Culture(), T(messageKey), prayerName)
             : string.Format(Culture(), T(messageKey), prayerName, minutes);
-        PrayerDue?.Invoke(this, new PrayerAlert(moment, T(sunrise ? "SunriseReminder" : "PrayerReminder"), message, prayerName,
+        return new PrayerAlert(moment, T(sunrise ? "SunriseReminder" : "PrayerReminder"), message, prayerName,
             prayer.LocalTime.ToString(_settings.Use24HourClock ? "HH:mm" : "h:mm tt", Culture()),
-            LocationName, T("OK")));
-        _logger.LogInformation("Raised {Moment} reminder for {Prayer} at {LocationId}", moment, prayer.Prayer, _location.Id);
+            LocationName, T("OK"));
     }
 
     private void UpdateSearchResults()

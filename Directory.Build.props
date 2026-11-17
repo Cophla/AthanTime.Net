@@ -1,11 +1,11 @@
 <Project>
   <PropertyGroup>
-    <!-- Change this single value only after the next SDK and all managed/native targets are verified. -->
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Shared by the application, tests and build tools; validate every native RID when upgrading. -->
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Keep prerelease identity shared by the UI, support drafts and all packaging entry points. -->
-    <Version>1.0.2-beta.7</Version>
+    <Version>1.0.2-beta.15</Version>
     <Authors>Athan Time contributors</Authors>
     <Copyright>Copyright © 2026 Athan Time contributors</Copyright>
   </PropertyGroup>

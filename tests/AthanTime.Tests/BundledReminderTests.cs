@@ -11,17 +11,42 @@ public sealed class BundledReminderTests(DefaultAdhkarRepository defaults, UiTes
     LoggingLevelSwitch levelSwitch)
 {
     [Fact]
+    public Task SuggestedCityCannotSendPrayerRemindersBeforeConfirmationOrReplayPastOnes() => ui.Run(() =>
+    {
+        harness.Settings.Value.LocationNeedsConfirmation = true;
+        foreach (var row in harness.Settings.Value.PrayerNotifications.Values)
+        { row.NotifyBefore = false; row.NotifyAfter = false; }
+        var dhuhr = harness.Settings.Value.PrayerNotifications[AthanTime.Net.Models.Prayer.Dhuhr];
+        dhuhr.NotifyAfter = true; dhuhr.MinutesAfter = 1;
+        harness.Clock.Now = new DateTimeOffset(2026, 9, 26, 11, 59, 58, TimeSpan.Zero);
+        using var vm = harness.Create();
+        var alerts = new List<PrayerAlert>();
+        vm.PrayerDue += (_, alert) => alerts.Add(alert);
+        vm.Tick();
+        AdvanceSeconds(vm, 3);
+        Assert.Empty(alerts);
+        vm.ConfirmLocation();
+        var saves = harness.Settings.Saves;
+        vm.ConfirmLocation();
+        Assert.Equal(saves, harness.Settings.Saves);
+        vm.Tick();
+        Assert.Empty(alerts);
+        AdvanceSeconds(vm, 59);
+        Assert.Single(alerts);
+        Assert.Equal(PrayerAlertMoment.After, alerts[0].Moment);
+        Assert.False(harness.Settings.Value.LocationNeedsConfirmation);
+    });
+
+    [Fact]
     public void BundledRecordingsAreLocalOggFiles()
     {
         Assert.True(AudioPlayer.IsSupportedFile(BundledAudio.Athan));
         Assert.True(AudioPlayer.IsSupportedFile(BundledAudio.Takbeer));
-        Assert.True(AudioPlayer.IsSupportedFile(BundledAudio.Alhamdulillah));
     }
 
     [Theory]
     [InlineData("BUNDLED:ADHAN", "adhan.ogg")]
     [InlineData("Bundled:Takbeer", "takbeer.ogg")]
-    [InlineData("bundled:ALHAMDULILLAH", "alhamdulillah.ogg")]
     public void BundledIdentifiersResolveToInstallationLocalRecordings(string id, string fileName) =>
         Assert.Equal(Path.Combine(AppContext.BaseDirectory, "Assets", "Audio", fileName), BundledAudio.Resolve(id));
 

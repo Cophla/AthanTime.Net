@@ -20,14 +20,19 @@ jobs:
         include:
           - runner: windows-2022
             rid: win-x64
+            platform: Windows-x64
           - runner: ubuntu-22.04
             rid: linux-x64
+            platform: Linux-x64
           - runner: ubuntu-24.04-arm
             rid: linux-arm64
+            platform: Linux-arm64
           - runner: macos-15-intel
             rid: osx-x64
+            platform: macOS-Intel-x64
           - runner: macos-15
             rid: osx-arm64
+            platform: macOS-AppleSilicon-arm64
     defaults:
       run:
         shell: pwsh
@@ -50,10 +55,12 @@ jobs:
         run: dotnet --info
       - name: Build and run the real xUnit v3 test suite
         run: |
-          dotnet build AthanTime.Net.slnx -c Release
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet test AthanTime.Net.slnx -c Release --no-build
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($configuration in @('Debug', 'Release')) {
+            dotnet build AthanTime.Net.slnx -c $configuration
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            dotnet test AthanTime.Net.slnx -c $configuration --no-build
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - name: Install the free NSIS compiler
         if: runner.os == 'Windows'
         run: |
@@ -67,10 +74,16 @@ jobs:
         run: |
           dotnet run --project tools/InstallerBuilder -c Release --no-build -- --rid $env:PACKAGE_RID --version $env:PACKAGE_VERSION
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Keep the unsigned installer for manual desktop validation
+      - name: Build the matching self-contained portable ZIP
+        env:
+          PACKAGE_RID: ${{ matrix.rid }}
+        run: |
+          dotnet run --project tools/InstallerBuilder -c Release --no-build -- --format portable --rid $env:PACKAGE_RID
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Keep the unsigned packages for manual desktop validation
         uses: actions/upload-artifact@v7
         with:
-          name: installer-${{ matrix.rid }}
+          name: AthanTime-${{ steps.project.outputs.version }}-${{ matrix.platform }}
           path: artifacts/packages/*
           if-no-files-found: error
           retention-days: 7

@@ -323,7 +323,8 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
                 Assert.Equal(vm.AppName, window.Title);
                 Assert.Equal(vm.AppName, header.Text);
                 Assert.True(header.IsEffectivelyVisible);
-                Assert.Contains(vm.AppVersion, vm.AboutText);
+                Assert.Equal(vm["AboutText"], vm.AboutText);
+                Assert.DoesNotContain("{0}", vm.AboutText);
                 if (expectedBeta) Assert.Contains($"({expectedLabels[language.Code]})", header.Text);
                 else Assert.DoesNotContain($"({expectedLabels[language.Code]})", header.Text);
                 Assert.True(header.Bounds.Width > 0);
@@ -1119,6 +1120,7 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
         public int CallCount { get { lock (_gate) return _calls.Count; } }
         public int MaximumActive { get; private set; }
         public LocationInfo Get(string id) => throw new InvalidOperationException("The selected location is in memory.");
+        public LocationInfo? Suggest(IReadOnlyList<string> timeZoneIds, string countryCode) => null;
         public Task<SearchCall> NextAsync() => _requests.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
 
         public IReadOnlyList<LocationInfo> Search(string? query, string language, int limit = 30)

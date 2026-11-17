@@ -388,6 +388,24 @@ public sealed partial class MainViewModel
         SaveAdhkar();
     }
 
+    /// <summary>Tests the next actual prayer popup and configured audio without recording delivery or changing switches.</summary>
+    public async Task TestPrayerReminderAsync()
+    {
+        var now = _timeProvider.GetUtcNow();
+        var daily = Calculate(DateOnly.FromDateTime(LocationNow()));
+        var prayer = FindCurrentAndNext(daily, now).Next
+            ?? Calculate(daily.Date.AddDays(1)).Times.First(time => time.Prayer == Prayer.Fajr);
+        DismissTextAdhkar();
+        PrayerDue?.Invoke(this, CreatePrayerAlert(prayer, PrayerAlertMoment.AtTime));
+        var notification = _settings.PrayerNotifications[prayer.Prayer];
+        if (PrayerAudioEnabled && notification.AudioEnabled)
+            await PreviewAudioAsync(string.IsNullOrWhiteSpace(notification.AudioPath) ? "bundled:adhan" : notification.AudioPath);
+        _logger.LogDebug("Tested prayer reminder for {Prayer}", prayer.Prayer);
+    }
+
+    /// <summary>Tests the selected recording, first playlist entry, or bundled Takbeer without changing the interval.</summary>
+    public Task TestAdhkarAudioAsync() => PreviewAudioAsync(SelectedAdhkarFile ?? AdhkarFiles.FirstOrDefault() ?? "bundled:takbeer");
+
     /// <summary>Previews a selected local file using the same player as scheduled audio.</summary>
     public Task PreviewAudioAsync(string? path) => string.IsNullOrWhiteSpace(path)
         ? Task.CompletedTask : _audioPlayer.PlayAsync(BundledAudio.Resolve(path), AudioVolume);

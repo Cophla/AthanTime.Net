@@ -4,5 +4,6 @@ Name=Athan Time @VERSION@
 Comment=Offline prayer times, Athan and optional sunrise reminders
 Exec=athan-time
 Icon=athan-time
+StartupWMClass=AthanTime.Net
 Terminal=false
 Categories=Utility;

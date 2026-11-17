@@ -1,12 +1,33 @@
 # Starting a new GitHub repository
 
-The beta.7 source snapshot is prepared for GitHub. For a **new, empty repository**,
+The approved public project is [Cophla/AthanTime.Net](https://github.com/Cophla/AthanTime.Net).
+Application downloads belong on its [Releases page](https://github.com/Cophla/AthanTime.Net/releases).
+The supplied beta.11 public release link uses
+[v1.0.2-beta11](https://github.com/Cophla/AthanTime.Net/releases/tag/v1.0.2-beta11).
+Local source/version metadata spells that version `1.0.2-beta.11`; preserve actual
+published links instead of deriving release URLs from that spelling.
+
+The beta.15 source preparation targets .NET 11. For a **new, empty repository**,
 use the reviewed clean source ZIP or fresh local repository supplied with the handoff.
 It includes current source, tests, installers/build recipes, documentation,
 compressed catalogs, media and required third-party notices. Source ZIPs omit
 Git metadata, local profiles, signing material, logs and generated outputs.
 [AGENTS.md](../AGENTS.md) remains the canonical engineering guide; publication
 checks are in the [release checklist](RELEASE-CHECKLIST.md#before-github-publication).
+
+The requested beta.15 preparation includes regional first-run defaults and optional
+settings removal. Use its refreshed source, downloads, hashes and build information.
+Older generated downloads were retired by the requested cleanup; compact audit
+records remain under artifacts/evidence. Review pending source changes
+and native/signing/audio-license limitations before publication.
+
+The later setup Uninstall option, explicit same-user shutdown and cleanup-diagnostics
+fixes are included in the refreshed packages and current reviewed source ZIP under
+`artifacts/packages/`. Their BUILD-INFO.json and SHA256SUMS.txt describe that exact
+snapshot. Obsolete release-folder downloads were removed. The prepared Git repository
+retains its older snapshot; do not publish that tree as the current source. Use the
+refreshed source ZIP for a future reviewed import; existing public releases require
+a new version rather than silently replacing their downloads. The beta.15 request authorizes a release commit and publication through the reviewed GitHub commit based on public main; actual results belong in the handoff.
 
 ## Keep old history separate
 
@@ -42,7 +63,7 @@ git config --local user.email "YOUR_PUBLIC_PROJECT_EMAIL"
 git add .
 git diff --cached --stat
 git diff --cached --check
-git update-index --chmod=+x Create-Installers.command Create-Installers.sh packaging/linux/build-deb.sh packaging/macos/build-app.sh
+git update-index --chmod=+x Create-Installers.command Create-Installers.sh packaging/linux/build-deb.sh packaging/macos/build-app.sh packaging/linux/Launch-Athan-Time.sh packaging/linux/Install-Shortcut.sh packaging/linux/Install-Requirements.sh packaging/macos/Launch-Athan-Time.command
 git commit -m "Initial beta release of offline cross-platform Athan Time"
 ~~~
 
@@ -62,7 +83,7 @@ installer archives have different purposes; keep generated installers out of Git
 
 ## Build and verify
 
-Install the .NET 10 SDK; normal dependency restore may need package access once.
+Install the .NET 11 SDK; normal dependency restore may need package access once.
 From a clean checkout, run the Debug/Release commands in
 [verification](../AGENTS.md#verification). The catalog is already prebuilt in the
 versioned ZIP; no GeoNames regeneration is needed for normal builds. Offline
@@ -76,12 +97,18 @@ The Windows/macOS/Linux matrix remains win-x64, linux-x64, linux-arm64,
 osx-x64, osx-arm64. Shared MSBuild extraction and .NET ZIP creation add no new
 native dependency. Native installers still require matching hosts. Native
 desktop/signing/resource validation remains separate from source readiness;
-see [dated packaging evidence](PACKAGING.md#support-mailbox-beta7-2026-11-08).
-Use the [beta.7 release notes](releases/v1.0.2-beta.7.md) for the tag, title,
+see [dated packaging evidence](PACKAGING.md#interactive-monitor-dragging-2026-11-14).
+Use the [beta.15 preparation notes](releases/v1.0.2-beta.15.md) for the tag, title,
 description and upload instructions. Existing GitHub repositories should advance
-their reviewed branch to the beta.7 source; do not force-push or replace public
+their reviewed branch to the beta.15 source; do not force-push or replace public
 history to publish an update. The supplied clean repository retains its beta.6
-initial commit followed by the beta.7 change.
+initial commit and subsequent updates. Do not reuse a previous beta's source
+archive or checksums for the current application payload. All application
+downloads are self-contained; their names spell out operating system, CPU and
+Setup/Portable. Source ZIPs are for building, not running. Keep package binaries
+in GitHub Release assets and the reviewed source changes in the repository.
+The supplied local source copy can have pending reviewed changes; inspect
+`git status` and commit those before tagging the release. The explicitly requested beta.15 commit/publication uses the reviewed GitHub commit based on public main; the older prepared repository is preserved.
 
 The November 8 beta.6 clean-repository builds passed all 425 tests in each configuration
 with zero warnings/errors. That initial single-commit source snapshot had 135 files,

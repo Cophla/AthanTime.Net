@@ -9,6 +9,13 @@ The current release is read from the versioned InstallerBuilder filename; pass
 .PARAMETER TestAllUsers
 Adds machine-scope/coexistence checks from an elevated Sandbox PowerShell.
 UAC approval, cancellation and alternate credentials need separate manual checks.
+Interactive completion must visibly launch as the desktop user (both scopes);
+silent setup must not launch. Test missing-shell fallback and legacy refusal manually.
+Also test unchecked/checked settings removal interactively in both scopes, including
+alternate administrator credentials. Start cleanup tests from an unelevated desktop
+user: cleanup precedes UAC for machine file removal. Already elevated runs must keep
+settings with the checkbox disabled. Confirm only that user's owned files/login are
+removed; other users/recordings remain and cleanup failures retain explicit choices.
 #>
 param(
     [string]$PreviousInstaller = 'C:\Smoke\previous-1.0.0.exe',
@@ -24,11 +31,11 @@ if ($env:USERNAME -ne 'WDAGUtilityAccount') { throw 'Run this procedure only ins
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 if (-not $Installer) {
-    $candidates = @(Get-ChildItem -LiteralPath 'C:\Smoke' -Filter 'AthanTime-*-win-x64-setup.exe' -File)
+    $candidates = @(Get-ChildItem -LiteralPath 'C:\Smoke' -Filter 'AthanTime-*-Windows-x64-Setup.exe' -File)
     if ($candidates.Count -ne 1) { throw 'Supply -Installer or map exactly one current setup into C:\Smoke.' }
     $Installer = $candidates[0].FullName
 }
-if ([IO.Path]::GetFileName($Installer) -notmatch '^AthanTime-(?<release>[0-9]+(?:\.[0-9]+){1,3}(?:-[A-Za-z0-9.-]+)?)-win-x64-setup\.exe$') {
+if ([IO.Path]::GetFileName($Installer) -notmatch '^AthanTime-(?<release>[0-9]+(?:\.[0-9]+){1,3}(?:-[A-Za-z0-9.-]+)?)-Windows-x64-Setup\.exe$') {
     throw 'Use the versioned filename produced by InstallerBuilder.'
 }
 $expectedVersion = $Matches.release
@@ -133,8 +140,10 @@ try {
     Check (((Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash) -eq $binaryHash) 'Locked-file update failed before changing the executable'
 
     $application = StartApp
-    RunSetup $Installer '/S' 2
-    Check (-not $application.HasExited) 'Running application blocked update without being terminated'
+    RunSetup $Installer '/S'
+    Check ($application.WaitForExit(15000)) 'Update gracefully closed the running tray application'
+    $application.Dispose()
+    $application = StartApp
     $duplicate = Start-Process -FilePath $executable -ArgumentList '--start-minimized' -WindowStyle Hidden -PassThru
     try {
         Check ($duplicate.WaitForExit(15000) -and $duplicate.ExitCode -eq 0) 'Duplicate launch handed activation to the installed application'
@@ -153,7 +162,11 @@ try {
     $application.Dispose()
     $application = $null
 
+    $application = StartApp
     RunSetup (Join-Path $installation 'Uninstall.exe') "/S _?=$installation"
+    Check ($application.WaitForExit(15000)) 'Uninstall gracefully closed the running app'
+    $application.Dispose()
+    $application = $null
     Check (-not (Test-Path -LiteralPath $executable)) 'Uninstall removed the bundled executable'
     Check (Test-Path -LiteralPath $settingsPath) 'Uninstall preserved the user profile'
     Check (((Get-FileHash -LiteralPath $recording -Algorithm SHA256).Hash) -eq $recordingHash) 'Uninstall preserved the user-added recording'

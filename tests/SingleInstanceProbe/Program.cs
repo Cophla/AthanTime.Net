@@ -1,6 +1,11 @@
 using AthanTime.Net.Services;
 
 // Test-only process: exercise the real guard/activation policy without UI, profiles or native integrations.
+if (args.Length > 1 && args[1] == "shutdown")
+{
+    Console.WriteLine(await SingleInstanceGuard.RequestShutdownAsync(args[0]) ? "shutdown" : "unavailable");
+    return;
+}
 if (args.Length > 1 && args[1] == "activate")
 {
     using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -20,10 +25,18 @@ if (args.Length > 1 && args[1] == "abandon")
 using var instance = args.Length > 1 && args[1] is "startup" or "startup-activate"
     ? SingleInstanceGuard.TryAcquireForStartup(args[0])
     : SingleInstanceGuard.TryAcquire(args[0]);
-if (instance is not null && args.Length > 1 && args[1] == "activation-owner") instance.StartActivationListener();
+if (instance is not null && args.Length > 1 && args[1] is "activation-owner" or "shutdown-owner") instance.StartActivationListener();
 if (instance is null && args.Length > 1 && args[1] == "startup-activate")
     await SingleInstanceGuard.RequestActivationAsync(args[0], allowForeground: _ => { });
 Console.WriteLine(instance is null ? "duplicate" : "acquired");
+if (instance is not null && args.Length > 1 && args[1] == "shutdown-owner")
+{
+    using var stopped = new ManualResetEventSlim();
+    if (args.Length > 2 && args[2] == "delayed") Console.ReadLine();
+    instance.RegisterShutdownHandler(() => { Console.WriteLine("shutting-down"); stopped.Set(); });
+    stopped.Wait(TimeSpan.FromSeconds(20));
+    return;
+}
 if (instance is not null && args.Length > 1 && args[1] == "activation-owner")
 {
     if (args.Length > 2 && args[2] == "delayed") Console.ReadLine();

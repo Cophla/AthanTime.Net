@@ -34,13 +34,29 @@ public sealed class TextAdhkarScheduler
     private DateTimeOffset? _hideAt;
     private int _index;
     public string? CurrentText { get; private set; }
+    /// <summary>Explicit previews can finish while automatic readings are disabled or paused.</summary>
+    public bool IsPreview { get; private set; }
+
+    /// <summary>Shows a manual reading without advancing the automatic text index.</summary>
+    public void Preview(string text, TextAdhkarSettings settings, DateTimeOffset now)
+    {
+        CurrentText = text;
+        IsPreview = true;
+        _hideAt = now.AddSeconds(Math.Clamp(settings.DisplaySeconds, 5, 600));
+    }
 
     /// <summary>Clears the current text and restarts at the beginning after a settings change.</summary>
-    public void Reset() { CurrentText = null; _next = null; _hideAt = null; _index = 0; }
+    public void Reset() { CurrentText = null; _next = null; _hideAt = null; _index = 0; IsPreview = false; }
 
     /// <summary>Updates the visible text. Returns true only when a window must open or close.</summary>
     public bool Tick(TextAdhkarSettings settings, DateTimeOffset now, IReadOnlyList<string>? defaultTexts = null)
     {
+        if (IsPreview)
+        {
+            if (now < _hideAt) return false;
+            Dismiss(settings, now);
+            return true;
+        }
         var texts = settings.Texts.Count > 0 ? settings.Texts : defaultTexts ?? [];
         if (!settings.Enabled || texts.Count == 0)
         {
@@ -66,6 +82,7 @@ public sealed class TextAdhkarScheduler
     public void Dismiss(TextAdhkarSettings settings, DateTimeOffset now)
     {
         CurrentText = null;
+        IsPreview = false;
         _hideAt = null;
         _next = now.AddMinutes(Math.Clamp(settings.PauseMinutes, 1, 1440));
     }

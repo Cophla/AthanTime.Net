@@ -10,6 +10,20 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
 {
     private readonly string _directory = Directory.CreateTempSubdirectory("athan-settings-tests-").FullName;
 
+    [Fact]
+    public void RemovedBundledTahmidIsFilteredWhileCustomRecordingsAreRetained()
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        var store = new SettingsService(logger, manual, path);
+        var settings = store.Load();
+        var custom = Path.Combine(_directory, "alhamdulillah.ogg");
+        settings.Adhkar.AudioFiles = ["BUNDLED:ALHAMDULILLAH", "bundled:takbeer", custom];
+        // Write a legacy profile directly so Load exercises its normal compatibility path.
+        File.WriteAllText(path, JsonSerializer.Serialize(settings));
+        Assert.Equal(new[] { "bundled:takbeer", custom }, store.Load().Adhkar.AudioFiles);
+        Assert.Equal(new[] { "bundled:takbeer" }, new AdhkarSettings().AudioFiles);
+    }
+
     /// <summary>Saving any combination of switches retains each separate before/after duration.</summary>
     [Theory]
     [InlineData(Prayer.Dhuhr, false, false, false)]

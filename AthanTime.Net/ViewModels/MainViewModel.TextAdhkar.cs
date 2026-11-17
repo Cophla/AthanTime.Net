@@ -89,6 +89,18 @@ public sealed partial class MainViewModel
         SaveTextAdhkar();
     }
 
+    /// <summary>Tests a selected, first saved or current default reading for the configured duration.</summary>
+    public void TestTextAdhkar()
+    {
+        var now = _timeProvider.GetUtcNow();
+        var text = SelectedAdhkarText ?? AdhkarTexts.FirstOrDefault()
+            ?? _defaultAdhkar.GetTexts(_settings.Language, LocationNow().Hour).FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(text)) return;
+        _textAdhkarScheduler.Preview(text, _settings.TextAdhkar, now);
+        TextAdhkarChanged?.Invoke(this, text);
+        _logger.LogDebug("Tested text Adhkar popup");
+    }
+
     /// <summary>Dismisses a reading early and waits the configured pause before continuing.</summary>
     public void DismissTextAdhkar()
     {

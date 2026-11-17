@@ -15,6 +15,8 @@ public interface ILocationRepository
     LocationInfo Get(string id);
     /// <summary>Searches localized place and country names case-insensitively.</summary>
     IReadOnlyList<LocationInfo> Search(string? query, string language, int limit = 30);
+    /// <summary>Suggests one populated place in the OS zone, preferring its region; this is not geolocation.</summary>
+    LocationInfo? Suggest(IReadOnlyList<string> timeZoneIds, string countryCode);
 }
 
 /// <inheritdoc />
@@ -42,6 +44,25 @@ public sealed class LocationRepository : ILocationRepository
 
     /// <inheritdoc />
     public int Count { get; }
+
+    /// <inheritdoc />
+    public LocationInfo? Suggest(IReadOnlyList<string> timeZoneIds, string countryCode)
+    {
+        if (timeZoneIds.Count == 0) return null;
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        var parameters = timeZoneIds.Select((zone, index) =>
+        {
+            var name = "$zone" + index;
+            command.Parameters.AddWithValue(name, zone);
+            return name;
+        }).ToArray();
+        command.Parameters.AddWithValue("$country", countryCode);
+        command.CommandText = SelectColumns + " FROM locations l JOIN countries c ON c.code = l.countryCode WHERE l.timeZoneId IN ("
+            + string.Join(",", parameters) + ") ORDER BY CASE WHEN l.countryCode = $country COLLATE NOCASE THEN 0 ELSE 1 END, l.population DESC, l.id LIMIT 1";
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? Read(reader) : null;
+    }
 
     /// <inheritdoc />
     public LocationInfo Get(string id)

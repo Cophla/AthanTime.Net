@@ -6,6 +6,8 @@ public sealed class AppSettings
     public int SchemaVersion { get; set; } = 5;
     public string LocationId { get; set; } = "geonames-276781";
     public string Language { get; set; } = "en";
+    /// <summary>Only new regional defaults require confirmation; missing legacy fields remain confirmed.</summary>
+    public bool LocationNeedsConfirmation { get; set; }
     public bool UseAutomaticConvention { get; set; } = true;
     public string MethodId { get; set; } = "MWL";
     public AsrJuristic AsrJuristic { get; set; } = AsrJuristic.Standard;
@@ -80,7 +82,7 @@ public sealed class AdhkarSettings
     public bool Enabled { get; set; }
     public bool RandomOrder { get; set; }
     public int IntervalMinutes { get; set; } = 30;
-    public List<string> AudioFiles { get; set; } = ["bundled:takbeer", "bundled:alhamdulillah"];
+    public List<string> AudioFiles { get; set; } = ["bundled:takbeer"];
 }
 
 /// <summary>Shows one text, closes it after the reading duration, then waits before the next text.</summary>

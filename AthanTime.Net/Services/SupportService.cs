@@ -25,7 +25,7 @@ public sealed class SupportService(ILocalizationService localization, IConfigura
         var subject = $"Athan Time — {_localization.Get(language, subjectKey)}";
         var version = App.ReleaseVersion;
         var body = $"Athan Time {version}\n{System.Runtime.InteropServices.RuntimeInformation.OSDescription}\n" +
-            $".NET {Environment.Version}\n\n{_localization.Get(language, "EmailBody")}";
+            $".NET {Environment.Version}\n{App.ProjectUrl}\n{App.ReleasesUrl}\n\n{_localization.Get(language, "EmailBody")}";
         if (attachmentName is not null)
             body += "\n\n" + string.Format(CultureInfo.CurrentCulture,
                 _localization.Get(language, "AttachLogs"), attachmentName);

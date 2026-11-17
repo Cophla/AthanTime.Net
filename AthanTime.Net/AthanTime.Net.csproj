@@ -3,8 +3,9 @@
     <RootNamespace>AthanTime.Net</RootNamespace>
     <OutputType>WinExe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Description>Offline Athan and five-prayer times for Windows, macOS and Linux, with separate sunrise reminders, eight languages, bounded on-demand SQLite location search, remembered window position, one Release instance per OS user with repeat-launch window activation, and concurrent Debug development runs. Release $(Version).</Description>
+    <Description>Offline prayer times and Athan reminders for Windows, macOS and Linux, with sunrise, Qibla direction, configurable reminders, audio and text Adhkar, eight languages, light/dark themes and local settings. Release $(Version).</Description>
     <Product>Athan Time $(Version)</Product>
+    <PackageProjectUrl>https://github.com/Cophla/AthanTime.Net</PackageProjectUrl>
     <ApplicationIcon>Assets\athan-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -34,7 +35,9 @@
     <EmbeddedResource Include="Data\default-settings.json" />
     <EmbeddedResource Include="Data\default-adhkar.json" />
     <EmbeddedResource Include="Data\ui-text.json" />
+    <None Update="Data\desktop-control.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="appsettings*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\packaging\README.txt" Link="README.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\THIRD-PARTY-NOTICES.md" Link="licenses\ATHAN-THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="$(PkgSoundFlow)\LICENSE.md" Link="licenses\SOUNDFLOW-LICENSE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="$(PkgNVorbis)\LICENSE" Link="licenses\NVORBIS-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
@@ -62,9 +65,10 @@
     </PropertyGroup>
     <Error Condition="'$(RuntimeSuffix)' == ''" Text="Unsupported publish runtime: $(RuntimeIdentifier)." />
     <ItemGroup>
-      <RequiredPayload Include="$(PublishDir)Assets/Audio/adhan.ogg;$(PublishDir)Assets/Audio/takbeer.ogg;$(PublishDir)Assets/Audio/alhamdulillah.ogg;$(PublishDir)NVorbis.dll" />
+      <RequiredPayload Include="$(PublishDir)Assets/Audio/adhan.ogg;$(PublishDir)Assets/Audio/takbeer.ogg;$(PublishDir)NVorbis.dll" />
       <RequiredPayload Include="$(PublishDir)$(AudioNative)" Condition="'$(AudioNative)' != ''" />
-      <RequiredPayload Include="$(PublishDir)Data/locations.db;$(PublishDir)Microsoft.Data.Sqlite.dll" />
+      <RequiredPayload Include="$(PublishDir)Data/locations.db;$(PublishDir)Data/desktop-control.json;$(PublishDir)Microsoft.Data.Sqlite.dll" />
+      <RequiredPayload Include="$(PublishDir)README.txt" />
       <RequiredPayload Include="$(PublishDir)$(SqliteNative)" Condition="'$(SqliteNative)' != ''" />
       <RequiredPayload Include="$(PublishDir)System.Private.CoreLib.dll;$(PublishDir)AthanTime.Net.runtimeconfig.json;$(PublishDir)$(RuntimePrefix)coreclr$(RuntimeSuffix);$(PublishDir)$(RuntimePrefix)hostfxr$(RuntimeSuffix)" />
       <ObsoleteAudio Include="$(PublishDir)**/*.mp3" />

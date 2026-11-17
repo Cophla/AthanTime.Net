@@ -26,6 +26,57 @@ public class AppWindow : Window
     }
 }
 
+/// <summary>Summarizes the app with explicit browser links and the shared window appearance.</summary>
+public sealed class AboutWindow : AppWindow
+{
+    /// <summary>Uses the owner's browser action so link failures follow the existing localized error path.</summary>
+    public AboutWindow(MainViewModel viewModel, Func<string, Task> openLink) : base(viewModel)
+    {
+        this.Bind(TitleProperty, new Binding(nameof(viewModel.AboutLabel)));
+        Width = 560;
+        Height = 600;
+        MinWidth = 360;
+        MinHeight = 300;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var summary = new TextBlock { Name = "AboutSummary", TextWrapping = TextWrapping.Wrap };
+        summary.Bind(TextBlock.TextProperty, new Binding(nameof(viewModel.AboutText)));
+        var panel = new StackPanel { Spacing = 14 };
+        panel.Children.Add(summary);
+        var version = new TextBlock { Name = "AboutVersion", FlowDirection = FlowDirection.LeftToRight };
+        version.Bind(TextBlock.TextProperty, new Binding(nameof(viewModel.AppVersion)));
+        panel.Children.Add(version);
+        AddLink("AboutProjectLink", "ProjectPage", App.ProjectUrl);
+        AddLink("AboutReleasesLink", "ReleasesPage", App.ReleasesUrl);
+        var close = new Button { HorizontalAlignment = HorizontalAlignment.Right };
+        close.Bind(ContentControl.ContentProperty, new Binding(nameof(viewModel.OkLabel)));
+        close.Click += (_, _) => Close();
+        panel.Children.Add(close);
+        SetBody(panel);
+
+        void AddLink(string name, string captionKey, string url)
+        {
+            var caption = new TextBlock { Classes = { "caption" } };
+            caption.Bind(TextBlock.TextProperty, new Binding($"[{captionKey}]"));
+            var link = new Button
+            {
+                Name = name, HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Content = new TextBlock
+                {
+                    Text = url, TextWrapping = TextWrapping.Wrap, FlowDirection = FlowDirection.LeftToRight,
+                    TextDecorations = new TextDecorationCollection
+                    {
+                        new TextDecoration { Location = TextDecorationLocation.Underline }
+                    }
+                }
+            };
+            link.Click += async (_, _) => await openLink(url);
+            panel.Children.Add(caption);
+            panel.Children.Add(link);
+        }
+    }
+}
+
 /// <summary>Displays prayer/sunrise reminder text with the main window's card, typography and buttons.</summary>
 public sealed class PrayerNotificationWindow : AppWindow
 {

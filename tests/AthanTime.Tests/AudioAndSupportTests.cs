@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using AthanTime.Net;
 using AthanTime.Net.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -10,6 +11,16 @@ namespace AthanTime.Tests;
 public sealed class AudioAndSupportTests(SupportService support, ILocalizationService localization,
     ILogger<AudioPlayer> logger)
 {
+    /// <summary>Prevent replacing the approved default recordings with an older clip or a build placeholder.</summary>
+    [Theory]
+    [InlineData("bundled:adhan", "34119FC6EA6ADA68E9ED20336C656533C27D097E1C4DF338E186C02F6EB952C7")]
+    [InlineData("bundled:takbeer", "D31FFDC368003681DA302A3EE8ABBF89A2C9351F38F2C9CB3EF6A6653AC35A2F")]
+    public void DefaultRecordingsMatchUserSuppliedAudio(string identifier, string expectedHash)
+    {
+        using var stream = File.OpenRead(BundledAudio.Resolve(identifier));
+        Assert.Equal(expectedHash, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream)));
+    }
+
     [Fact]
     public void EmptyDecodeReadDoesNotAdvanceOrEndTheRecording()
     {
@@ -59,7 +70,7 @@ public sealed class AudioAndSupportTests(SupportService support, ILocalizationSe
     [Fact]
     public void BundledOggSamplesDecodeCompletelyWithoutAudioDevices()
     {
-        foreach (var path in new[] { BundledAudio.Athan, BundledAudio.Takbeer, BundledAudio.Alhamdulillah })
+        foreach (var path in new[] { BundledAudio.Athan, BundledAudio.Takbeer })
         {
             using var provider = new VorbisAudioProvider(path);
             var buffer = new float[4096];
@@ -78,6 +89,7 @@ public sealed class AudioAndSupportTests(SupportService support, ILocalizationSe
                 total += count;
             }
             Assert.Equal(provider.Length, total);
+            Assert.Null(provider.Error);
             Assert.True(hasSound);
             Assert.Equal(1, ended);
             Assert.Equal(0, provider.ReadBytes(buffer));
@@ -180,6 +192,19 @@ public sealed class AudioAndSupportTests(SupportService support, ILocalizationSe
         var configured = new SupportService(localization, configuration);
         Assert.StartsWith("mailto:feedback@example.org?", configured.CreateDraft(SupportMessage.Suggestion, "en").OriginalString,
             StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProjectLinksAppearInSupportDraftsAndAboutInEveryLanguage()
+    {
+        Assert.Equal("https://github.com/Cophla/AthanTime.Net", App.ProjectUrl);
+        Assert.Equal("https://github.com/Cophla/AthanTime.Net/releases", App.ReleasesUrl);
+        foreach (var language in LocalizationService.Languages)
+        {
+            var draft = Uri.UnescapeDataString(support.CreateDraft(SupportMessage.Suggestion, language.Code).Query);
+            Assert.Contains(App.ProjectUrl, draft);
+            Assert.Contains(App.ReleasesUrl, draft);
+        }
     }
 
     [Theory]

@@ -9,11 +9,34 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
 
-// Release owns the lease/channel before host startup; a duplicate only signals the existing window.
-using var instance = SingleInstanceGuard.TryAcquireForStartup();
+// Installer shutdown is explicit and never starts a host, window or audio device.
+if (args.Contains("--shutdown", StringComparer.OrdinalIgnoreCase))
+{
+    if (args.Length != 1) { Environment.ExitCode = 2; return; }
+    using var lease = SingleInstanceGuard.TryAcquire();
+    if (lease is null)
+        Environment.ExitCode = SingleInstanceGuard.RequestShutdownAsync().GetAwaiter().GetResult() ? 0 : 1;
+    return;
+}
+// Destructive cleanup is an explicit installer/helper action, never a duplicate activation.
+var removeUserSettings = args.Contains("--remove-user-settings", StringComparer.OrdinalIgnoreCase);
+using var instance = removeUserSettings ? SingleInstanceGuard.TryAcquire() : SingleInstanceGuard.TryAcquireForStartup();
 if (instance is null)
 {
-    Environment.ExitCode = SingleInstanceGuard.RequestActivationAsync().GetAwaiter().GetResult() ? 0 : 1;
+    Environment.ExitCode = !removeUserSettings && SingleInstanceGuard.RequestActivationAsync().GetAwaiter().GetResult() ? 0 : 1;
+    return;
+}
+
+if (removeUserSettings)
+{
+    if (args.Length != 1) { Environment.ExitCode = 2; return; }
+    var userData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    if (!Path.IsPathFullyQualified(userData)) { Environment.ExitCode = (int)UserProfileCleanupResult.InvalidProfilePath; return; }
+    var directory = Path.Combine(userData, "AthanTime");
+    // No host, timer, audio or file sink may start while deleting this user's profile.
+    var cleanup = new UserProfileCleanup(directory, new LoginStartupService(),
+        Microsoft.Extensions.Logging.Abstractions.NullLogger<UserProfileCleanup>.Instance);
+    Environment.ExitCode = (int)cleanup.Remove();
     return;
 }
 
@@ -125,7 +148,9 @@ public partial class Program
                 services.AddSingleton<IHijriDateService, HijriDateService>();
                 services.AddSingleton<ISettingsService>(provider => new SettingsService(
                     provider.GetRequiredService<ILogger<SettingsService>>(),
-                    provider.GetRequiredService<ManualLocationService>(), Path.Combine(appDataDirectory, "settings.json")));
+                    provider.GetRequiredService<ManualLocationService>(), Path.Combine(appDataDirectory, "settings.json"),
+                    settings => provider.GetRequiredService<FirstRunDefaults>().Apply(settings)));
+                services.AddSingleton<FirstRunDefaults>();
                 services.AddSingleton<ManualLocationService>();
                 services.AddSingleton<NodaTime.IDateTimeZoneProvider>(_ => NodaTime.DateTimeZoneProviders.Tzdb);
                 services.AddSingleton<TimeZoneService>();

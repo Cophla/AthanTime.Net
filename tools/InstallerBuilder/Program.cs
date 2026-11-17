@@ -74,7 +74,7 @@ try
             string temporaryArchive = Path.Combine(Path.GetDirectoryName(output)!, Path.GetRandomFileName());
             try
             {
-                ZipFile.CreateFromDirectory(publishDirectory, temporaryArchive);
+                PortablePackage.Create(publishDirectory, temporaryArchive, plan, repository);
                 File.Move(temporaryArchive, output, true);
             }
             finally { if (File.Exists(temporaryArchive)) File.Delete(temporaryArchive); }

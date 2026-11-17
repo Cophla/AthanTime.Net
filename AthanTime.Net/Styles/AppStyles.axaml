@@ -127,6 +127,14 @@
     <Style Selector="CheckBox">
       <Setter Property="FontSize" Value="14" />
       <Setter Property="MinHeight" Value="38" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="ContentTemplate">
+        <DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate>
+      </Setter>
+    </Style>
+    <!-- State selectors override Fluent's template alignment in our taller/wrapped rows. -->
+    <Style Selector="CheckBox:unchecked /template/ Grid#RootGrid > Grid, CheckBox:checked /template/ Grid#RootGrid > Grid, CheckBox:indeterminate /template/ Grid#RootGrid > Grid">
+      <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="ComboBox, TextBox, NumericUpDown">
       <Setter Property="MinHeight" Value="42" />
@@ -143,11 +151,6 @@
     </Style>
     <Style Selector="ComboBox, AutoCompleteBox">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
-    </Style>
-    <Style Selector="CheckBox">
-      <Setter Property="ContentTemplate">
-        <DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate>
-      </Setter>
     </Style>
     <Style Selector="Expander">
       <Setter Property="HorizontalAlignment" Value="Stretch" />

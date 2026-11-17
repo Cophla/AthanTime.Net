@@ -6,11 +6,11 @@ namespace AthanTime.Tests;
 public sealed class InstallerPlanTests
 {
     [Theory]
-    [InlineData(BuildHost.Windows, "win-x64", "AthanTime-1.2.3-win-x64-setup.exe")]
-    [InlineData(BuildHost.Linux, "linux-x64", "AthanTime-1.2.3-amd64.deb")]
-    [InlineData(BuildHost.Linux, "linux-arm64", "AthanTime-1.2.3-arm64.deb")]
-    [InlineData(BuildHost.MacOS, "osx-arm64", "AthanTime-1.2.3-osx-arm64.dmg")]
-    [InlineData(BuildHost.MacOS, "osx-x64", "AthanTime-1.2.3-osx-x64.dmg")]
+    [InlineData(BuildHost.Windows, "win-x64", "AthanTime-1.2.3-Windows-x64-Setup.exe")]
+    [InlineData(BuildHost.Linux, "linux-x64", "AthanTime-1.2.3-Linux-x64.deb")]
+    [InlineData(BuildHost.Linux, "linux-arm64", "AthanTime-1.2.3-Linux-arm64.deb")]
+    [InlineData(BuildHost.MacOS, "osx-arm64", "AthanTime-1.2.3-macOS-AppleSilicon-arm64.dmg")]
+    [InlineData(BuildHost.MacOS, "osx-x64", "AthanTime-1.2.3-macOS-Intel-x64.dmg")]
     public void NativePlan_UsesExpectedFilename(BuildHost host, string runtime, string expected)
     {
         var plan = InstallerPlan.Create("NATIVE", runtime.ToUpperInvariant(), "1.2.3", host);
@@ -21,7 +21,24 @@ public sealed class InstallerPlanTests
     public void PortablePlan_AllowsOtherTargetOperatingSystems()
     {
         var plan = InstallerPlan.Create("PoRtAbLe", "osx-x64", "1.2.3", BuildHost.Windows);
-        Assert.Equal("AthanTime-1.2.3-osx-x64.zip", plan.FileName);
+        Assert.Equal("AthanTime-1.2.3-macOS-Intel-x64-Portable.zip", plan.FileName);
+    }
+
+    /// <summary>Portable names identify every target consistently, regardless of the build host.</summary>
+    [Theory]
+    [InlineData("win-x64", "Windows-x64")]
+    [InlineData("linux-x64", "Linux-x64")]
+    [InlineData("linux-arm64", "Linux-arm64")]
+    [InlineData("osx-x64", "macOS-Intel-x64")]
+    [InlineData("osx-arm64", "macOS-AppleSilicon-arm64")]
+    public void PortableNamesIdentifyPlatformAndKeepPrerelease(string runtime, string platform)
+    {
+        foreach (var host in Enum.GetValues<BuildHost>())
+        {
+            var plan = InstallerPlan.Create("portable", runtime, "1.2.3-beta.4", host);
+            Assert.Equal($"AthanTime-1.2.3-beta.4-{platform}-Portable.zip", plan.FileName);
+            Assert.Matches(@"\A[A-Za-z0-9._-]+\z", plan.FileName);
+        }
     }
 
     [Theory]
@@ -68,11 +85,11 @@ public sealed class InstallerPlanTests
 
     /// <summary>Prerelease filenames remain explicit for every supported native target, including macOS.</summary>
     [Theory]
-    [InlineData(BuildHost.Windows, "win-x64", "AthanTime-1.0.2-beta.1-win-x64-setup.exe")]
-    [InlineData(BuildHost.Linux, "linux-x64", "AthanTime-1.0.2-beta.1-amd64.deb")]
-    [InlineData(BuildHost.Linux, "linux-arm64", "AthanTime-1.0.2-beta.1-arm64.deb")]
-    [InlineData(BuildHost.MacOS, "osx-x64", "AthanTime-1.0.2-beta.1-osx-x64.dmg")]
-    [InlineData(BuildHost.MacOS, "osx-arm64", "AthanTime-1.0.2-beta.1-osx-arm64.dmg")]
+    [InlineData(BuildHost.Windows, "win-x64", "AthanTime-1.0.2-beta.1-Windows-x64-Setup.exe")]
+    [InlineData(BuildHost.Linux, "linux-x64", "AthanTime-1.0.2-beta.1-Linux-x64.deb")]
+    [InlineData(BuildHost.Linux, "linux-arm64", "AthanTime-1.0.2-beta.1-Linux-arm64.deb")]
+    [InlineData(BuildHost.MacOS, "osx-x64", "AthanTime-1.0.2-beta.1-macOS-Intel-x64.dmg")]
+    [InlineData(BuildHost.MacOS, "osx-arm64", "AthanTime-1.0.2-beta.1-macOS-AppleSilicon-arm64.dmg")]
     public void BetaPlansKeepFullReleaseVersion(BuildHost host, string runtime, string filename)
     {
         var plan = InstallerPlan.Create("native", runtime, "1.0.2-beta.1", host);

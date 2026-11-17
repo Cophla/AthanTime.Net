@@ -62,9 +62,9 @@ if ($signing) { $compilerArguments += "/DSIGN_SCRIPT=$signScript" }
 & $NsisCompiler @compilerArguments (Join-Path $PSScriptRoot "AthanTime.nsi")
 if ($LASTEXITCODE -ne 0) { throw "NSIS failed with exit code $LASTEXITCODE." }
 if ($signing) {
-    $package = Join-Path $signedOutput "AthanTime-$Version-win-x64-setup.exe"
+    $package = Join-Path $signedOutput "AthanTime-$Version-Windows-x64-Setup.exe"
     & $signScript -Path $package
-    Move-Item -LiteralPath $package -Destination (Join-Path $outputDirectory "AthanTime-$Version-win-x64-setup.exe") -Force
+    Move-Item -LiteralPath $package -Destination (Join-Path $outputDirectory "AthanTime-$Version-Windows-x64-Setup.exe") -Force
 }
 } finally {
     if (Test-Path -LiteralPath $publishDirectory) {

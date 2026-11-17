@@ -46,11 +46,29 @@ public sealed record InstallerPlan(string Format, string Runtime, string Version
         return new InstallerPlan(format, runtime, version, host, signWindowsBinaries);
     }
 
-    /// <summary>Returns the package filename produced by this request.</summary>
-    public string FileName => Format == "portable" ? $"AthanTime-{Version}-{Runtime}.zip" : Host switch
+    /// <summary>Names downloads by operating system and CPU rather than exposing runtime identifiers.</summary>
+    public string PlatformName => Runtime switch
     {
-        BuildHost.Windows => $"AthanTime-{Version}-win-x64-setup.exe",
-        BuildHost.Linux => $"AthanTime-{Version}-{(Runtime == "linux-arm64" ? "arm64" : "amd64")}.deb",
-        _ => $"AthanTime-{Version}-{Runtime}.dmg"
+        "win-x64" => "Windows-x64",
+        "linux-x64" => "Linux-x64",
+        "linux-arm64" => "Linux-arm64",
+        "osx-x64" => "macOS-Intel-x64",
+        "osx-arm64" => "macOS-AppleSilicon-arm64",
+        _ => throw new InvalidOperationException($"Unsupported runtime: {Runtime}.")
     };
+
+    /// <summary>Returns a GitHub-safe filename; installation identities stay independent of download names.</summary>
+    public string FileName
+    {
+        get
+        {
+            string extension = Format == "portable" ? "-Portable.zip" : Host switch
+            {
+                BuildHost.Windows => "-Setup.exe",
+                BuildHost.Linux => ".deb",
+                _ => ".dmg"
+            };
+            return $"AthanTime-{Version}-{PlatformName}{extension}";
+        }
+    }
 }

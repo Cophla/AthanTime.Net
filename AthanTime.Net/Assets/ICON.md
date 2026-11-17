@@ -23,9 +23,18 @@ instead takes Windows' bitmap fallback and lets the OS resize it, which produced
 rough, broken-looking tray/title-bar icons. Other desktops receive the compact
 PNG. The main window, secondary windows and tray share this loading path.
 
+Ubuntu/GNOME's dock also needs desktop registration. Linux portable ZIPs include
+`athan-time.png`; `Install-Shortcut.sh` copies it into the current user's XDG
+icon theme and writes `Icon=athan-time` plus `StartupWMClass=AthanTime.Net`.
+The latter matches Avalonia's default application assembly class on X11/XWayland.
+The DEB desktop entry uses the same icon name and class. A correct tray icon does
+not prove that dock registration is present. Rerun the shortcut helper after an
+update/move, fully exit/reopen, and replace a stale pinned generic shortcut.
+Native Wayland backend adoption requires a separate app-id review.
+
 ## Regenerate
 
-From the repository root with the .NET 10 SDK on Windows, macOS or Linux:
+From the repository root with the .NET 11 SDK on Windows, macOS or Linux:
 
 ```text
 dotnet run --project tools/IconBuilder -c Release

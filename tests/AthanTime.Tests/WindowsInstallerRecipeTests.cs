@@ -5,6 +5,179 @@ namespace AthanTime.Tests;
 /// <summary>Protects Windows scope, staging and exact-removal contracts without running installers.</summary>
 public sealed class WindowsInstallerRecipeTests
 {
+    /// <summary>Notify once after removal, including the silent elevated child, while preserving unattended and failed exits.</summary>
+    [Fact]
+    public void UninstallNotifiesOnlyAfterSuccessfulInteractiveRemoval()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "AthanTime.nsi")).ReplaceLineEndings("\n");
+        var success = ScriptBlock(script, "Function un.onUninstSuccess", "FunctionEnd");
+        Assert.Contains("IfSilent done\n  MessageBox MB_OK|MB_ICONINFORMATION \"Athan Time was uninstalled successfully.\"\ndone:", success);
+        var machine = ScriptBlock(script, "Function un.RequireMachinePrivileges", "FunctionEnd");
+        Assert.Contains("StrCpy $2 \"/S _?=$INSTDIR\"", machine);
+        var child = machine.IndexOf("Call un.RunElevated", StringComparison.Ordinal);
+        var notification = machine.IndexOf("StrCmp $0 0 0 finished\n  Call un.onUninstSuccess\nfinished:\n  SetErrorLevel $0\n  Quit", StringComparison.Ordinal);
+        Assert.True(child >= 0 && notification > child);
+        Assert.DoesNotContain("Call un.onUninstSuccess", ScriptBlock(script, "Function un.onInit", "FunctionEnd"));
+        Assert.DoesNotContain("Call un.onUninstSuccess", ScriptBlock(script, "Section \"Uninstall\"", "SectionEnd"));
+    }
+
+    [Fact]
+    public void SetupOffersRegisteredUninstallAndUsesTheUserShutdownChannel()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "AthanTime.nsi")).ReplaceLineEndings("\n");
+        Assert.Contains("Page custom MaintenancePage MaintenancePageLeave", script);
+        Assert.Contains("Uninstall this installation", script);
+        var remove = ScriptBlock(script, "Function RunRegisteredUninstaller", "FunctionEnd");
+        Assert.Contains("Call ValidateTargetScope", remove);
+        Assert.Contains("$ExistingInstallDirectory", remove);
+        Assert.Contains("$PLUGINSDIR\\AthanRemove.exe", remove);
+        Assert.Contains("_?=$INSTDIR", remove);
+        Assert.DoesNotContain("SetErrorLevel 10", remove);
+        Assert.Contains("SetErrorLevel $0\n  Quit", remove);
+        var close = ScriptBlock(script, "Function ${PREFIX}CloseRunningApp", "FunctionEnd");
+        Assert.Contains("Data\\desktop-control.json", close);
+        Assert.Contains("--shutdown", close);
+        Assert.True(close.IndexOf("Call ${PREFIX}RunUserApp", StringComparison.Ordinal) < close.IndexOf("RmStartSession", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NativeUninstallProcedureRefusesTheHostAndExercisesCheckedCleanup()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "Test-UninstallRunningApp.ps1"));
+        var guard = script.IndexOf("$env:USERNAME -ne 'WDAGUtilityAccount'", StringComparison.Ordinal);
+        Assert.True(guard >= 0 && guard < script.IndexOf("Start-Process", StringComparison.Ordinal));
+        Assert.Contains("/S /AllUsers", script);
+        Assert.Contains("'/Uninstall /AllUsers'", script);
+        Assert.Contains("$app.WaitForExit(40000)", script);
+        Assert.Contains("Native optional settings checkbox appeared", script);
+        Assert.Contains("Desktop-user settings removed", script);
+        Assert.Contains("Custom recording preserved", script);
+        Assert.Contains("Successful removal message appeared", script);
+        Assert.Contains("$uninstaller.ExitCode -eq 0", script);
+        Assert.DoesNotContain("$app.Kill", script);
+    }
+
+    /// <summary>Shutdown targets this installation, waits for locks and never forces another user's process.</summary>
+    [Fact]
+    public void UpdateClosesBeforeReplacementAndLaunchesOnlyAfterSuccess()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "AthanTime.nsi")).ReplaceLineEndings("\n");
+        var install = ScriptBlock(script, "Section \"Athan Time\" MainSection", "SectionEnd");
+        Assert.True(install.IndexOf("Call CloseRunningApp", StringComparison.Ordinal) < install.IndexOf("Call EnsureAppClosed", StringComparison.Ordinal));
+        Assert.True(install.IndexOf("Call EnsureAppClosed", StringComparison.Ordinal) < install.IndexOf("File /r", StringComparison.Ordinal));
+        foreach (var function in new[] { "Function .onInit", "Function ScopePageLeave" })
+            Assert.DoesNotContain("Call CloseRunningApp", ScriptBlock(script, function, "FunctionEnd"));
+        var close = ScriptBlock(script, "Function ${PREFIX}CloseRunningApp", "FunctionEnd");
+        Assert.Contains("$INSTDIR\\AthanTime.Net.exe", close);
+        Assert.Contains("RmRegisterResources(i r0, i 1, p r4, i 0, p 0, i 0, p 0)", close);
+        Assert.Contains("RmShutdown(i r0, i 0, p 0)", close);
+        Assert.Contains("RmEndSession", close);
+        Assert.DoesNotContain("taskkill", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IntCmp $9 40 prompt wait prompt", script);
+        Assert.Contains("Call LaunchInstalledApp", ScriptBlock(script, "Function .onInstSuccess", "FunctionEnd"));
+        var launch = ScriptBlock(script, "Function LaunchInstalledApp", "FunctionEnd");
+        Assert.Contains("StrCmp $NoStart \"1\" done", launch);
+        Assert.Contains("--show-window", launch);
+        Assert.Contains("Call RunUserApp", launch);
+        var userApp = ScriptBlock(script, "Function ${PREFIX}RunUserApp", "FunctionEnd");
+        Assert.Contains("GetShellWindow", userApp);
+        Assert.Contains("CreateEnvironmentBlock", userApp);
+        Assert.Contains("CreateProcessWithTokenW", userApp);
+        Assert.Contains("DestroyEnvironmentBlock", userApp);
+        var elevation = ScriptBlock(script, "Function RequireMachinePrivileges", "FunctionEnd");
+        Assert.Contains("/AllUsers /NoStart /InternalRelay", elevation);
+        Assert.DoesNotContain("maintenanceDone", elevation);
+        Assert.Contains("StrCmp $0 0 0 relayDone", elevation);
+        Assert.Contains("ReadRegStr $1 HKLM \"${UNINSTALL_KEY}\" \"InstallLocation\"", elevation);
+        Assert.Contains("StrCpy $INSTDIR $1\n  Call LaunchInstalledApp\nrelayDone:\n  SetErrorLevel $0", elevation);
+    }
+
+    [Fact]
+    public void UninstallRequestsGracefulExitAtStartupAndAgainBeforeCleanup()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "AthanTime.nsi")).ReplaceLineEndings("\n");
+        Assert.Contains("!insertmacro DefineCloseRunningApp \"un.\"", script);
+        foreach (var block in new[] { ScriptBlock(script, "Function un.onInit", "FunctionEnd"),
+                     ScriptBlock(script, "Section \"Uninstall\"", "SectionEnd") })
+        {
+            var close = block.IndexOf("Call un.CloseRunningApp", StringComparison.Ordinal);
+            var guard = block.IndexOf("Call un.EnsureAppClosed", StringComparison.Ordinal);
+            Assert.True(close >= 0 && guard > close);
+        }
+        var cleanup = ScriptBlock(script, "Function un.RemoveMySettings", "FunctionEnd");
+        Assert.Contains("Call un.CloseRunningApp", cleanup);
+        Assert.DoesNotContain("Call un.EnsureAppClosed", cleanup);
+        Assert.Contains("IntCmp $CleanupAttempts 20 evaluateResult waitBusy evaluateResult", cleanup);
+        Assert.Contains("Sleep 250\n  Goto runCleanup", cleanup);
+        Assert.Contains("MB_ABORTRETRYIGNORE", cleanup);
+        Assert.Contains("MB_DEFBUTTON2", cleanup);
+        Assert.Contains("IDIGNORE done", cleanup);
+        Assert.Contains("Ignore keeps any remaining settings and continues uninstall", cleanup);
+        Assert.Contains("IDRETRY retry", cleanup);
+        foreach (var result in new[] { 1, 2, 3, 4, 5, 6 })
+            Assert.Equal(1, cleanup.Split("${Case} " + result + "\n", StringSplitOptions.None).Length - 1);
+        Assert.Contains("$UserAppError", cleanup);
+        var userApp = ScriptBlock(script, "Function ${PREFIX}RunUserApp", "FunctionEnd");
+        Assert.Contains("Starting as desktop user (Windows error $9)", userApp);
+        Assert.Contains("Creating desktop-user environment (Windows error $9)", userApp);
+        Assert.Contains("GetExitCodeProcess", userApp);
+        Assert.Contains("i 30000", userApp);
+    }
+
+    [Fact]
+    public void UninstallCleansInTheOriginalUserBeforeElevatingOnlyFileRemoval()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "AthanTime.nsi")).ReplaceLineEndings("\n");
+        var section = ScriptBlock(script, "Section \"Uninstall\"", "SectionEnd");
+        var cleanup = section.IndexOf("Call un.RemoveMySettings", StringComparison.Ordinal);
+        var elevation = section.IndexOf("Call un.RequireMachinePrivileges", StringComparison.Ordinal);
+        var access = section.IndexOf("Call un.EnsureAppClosed", StringComparison.Ordinal);
+        var removal = section.IndexOf("!insertmacro RemovePublishedFiles", StringComparison.Ordinal);
+        Assert.True(cleanup >= 0 && elevation > cleanup && access > elevation && removal > access);
+        var initialize = ScriptBlock(script, "Function un.onInit", "FunctionEnd");
+        Assert.DoesNotContain("Call un.RunElevated", initialize);
+        Assert.Contains("userReady:\n  Call un.CloseRunningApp", initialize);
+        var page = ScriptBlock(script, "Function un.SettingsPage", "FunctionEnd");
+        Assert.Contains("EnableWindow $RemoveSettingsChoice 0", page);
+        Assert.Contains("without Run as administrator", page);
+        var clean = ScriptBlock(script, "Function un.RemoveMySettings", "FunctionEnd");
+        Assert.True(clean.IndexOf("StrCmp $0 \"Admin\"", StringComparison.Ordinal) < clean.IndexOf("Call un.RunUserApp", StringComparison.Ordinal));
+        Assert.Contains("Goto showFailure", clean);
+        var userApp = ScriptBlock(script, "Function ${PREFIX}RunUserApp", "FunctionEnd");
+        Assert.Contains("!if \"${PREFIX}\" == \"un.\"", userApp);
+        Assert.Contains("Start uninstall normally", userApp);
+        Assert.True(userApp.IndexOf("!else", StringComparison.Ordinal) < userApp.IndexOf("CreateProcessWithTokenW", StringComparison.Ordinal));
+        var relay = ScriptBlock(script, "Function un.RequireMachinePrivileges", "FunctionEnd");
+        Assert.Contains("StrCpy $2 \"/S _?=$INSTDIR\"", relay);
+        Assert.DoesNotContain("--remove-user-settings", relay);
+        var scope = ScriptBlock(script, "Function ScopePageLeave", "FunctionEnd");
+        Assert.DoesNotContain("Call RequireMachinePrivileges", scope);
+        Assert.Contains("Call RequireMachinePrivileges", ScriptBlock(script, "Function DirectoryPre", "FunctionEnd"));
+        Assert.Contains("StrCmp $InternalRelay \"1\"", ScriptBlock(script, "Function MaintenancePage", "FunctionEnd"));
+    }
+
+    [Fact]
+    public void UninstallSettingsRemovalIsExplicitUserScopedAndStopsOnCleanupFailure()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "AthanTime.nsi")).ReplaceLineEndings("\n");
+        Assert.Contains("UninstPage custom un.SettingsPage un.SettingsPageLeave", script);
+        var page = ScriptBlock(script, "Function un.SettingsPage", "FunctionEnd");
+        Assert.Contains("StrCpy $RemoveSettingsChoice \"0\"", page);
+        Assert.Contains("${NSD_CreateCheckbox}", page);
+        Assert.DoesNotContain("${NSD_Check}", page);
+        var cleanup = ScriptBlock(script, "Function un.RemoveMySettings", "FunctionEnd");
+        Assert.StartsWith("\n  ; Silent uninstall", cleanup);
+        Assert.Contains("IfSilent done", cleanup);
+        Assert.Contains("$RemoveSettingsChoice ${BST_CHECKED}", cleanup);
+        Assert.Contains("--remove-user-settings", cleanup);
+        Assert.Contains("Call un.RunUserApp", cleanup);
+        Assert.Contains("SetErrorLevel 2\n  Abort", cleanup);
+        var uninstall = ScriptBlock(script, "Section \"Uninstall\"", "SectionEnd");
+        Assert.True(uninstall.IndexOf("Call un.RemoveMySettings", StringComparison.Ordinal) < uninstall.IndexOf("!insertmacro RemovePublishedFiles", StringComparison.Ordinal));
+        Assert.DoesNotContain("$APPDATA", uninstall);
+        Assert.DoesNotContain("RMDir /r", uninstall);
+    }
+
     /// <summary>Setup and installed-app registration expose prerelease identity without changing the upgrade key.</summary>
     [Fact]
     public void SetupAndUninstallDisplayTheFullReleaseVersion()
@@ -13,6 +186,8 @@ public sealed class WindowsInstallerRecipeTests
         Assert.Contains("Name \"Athan Time ${APP_VERSION}\"", script);
         Assert.Contains("\"DisplayName\" \"Athan Time ${APP_VERSION}\"", script);
         Assert.Contains("\"DisplayVersion\" \"${APP_VERSION}\"", script);
+        Assert.Contains("\"URLInfoAbout\" \"https://github.com/Cophla/AthanTime.Net\"", script);
+        Assert.Contains("\"URLUpdateInfo\" \"https://github.com/Cophla/AthanTime.Net/releases\"", script);
         Assert.Contains("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\AthanTime", script);
     }
 
@@ -90,7 +265,7 @@ public sealed class WindowsInstallerRecipeTests
         Assert.DoesNotContain("Call EnsureAppClosed", preparation);
         Assert.DoesNotContain("Call RequireMachinePrivileges", preparation);
         var initialization = ScriptBlock(script, "Function .onInit", "FunctionEnd");
-        Assert.Contains("IfSilent applyScope\n  StrCmp $ScopeRequested \"\" done\napplyScope:", initialization);
+        Assert.Contains("IfSilent applyScope\n  Goto done\napplyScope:", initialization);
         var choice = ScriptBlock(script, "Function ScopePage", "FunctionEnd");
         Assert.Contains("Only me", choice);
         Assert.Contains("All users", choice);
@@ -106,11 +281,12 @@ public sealed class WindowsInstallerRecipeTests
         Assert.Contains("GetExitCodeProcess", relay);
         Assert.Contains("CloseHandle", relay);
         var uninstall = ScriptBlock(script, "Function un.onInit", "FunctionEnd");
-        var machine = uninstall[uninstall.IndexOf("machine:", StringComparison.Ordinal)..uninstall.IndexOf("current:", StringComparison.Ordinal)];
+        var machine = ScriptBlock(script, "Function un.RequireMachinePrivileges", "FunctionEnd");
         Assert.Contains("$PLUGINSDIR\\AthanUninstall.exe", machine);
         Assert.Contains("_?=$INSTDIR", machine);
-        Assert.Contains("Call un.RunElevated\n  SetErrorLevel $0\n  Quit", machine);
-        Assert.DoesNotContain("RunElevated", uninstall[uninstall.IndexOf("current:", StringComparison.Ordinal)..]);
+        Assert.Contains("Call un.RunElevated", machine);
+        Assert.Contains("finished:\n  SetErrorLevel $0\n  Quit", machine);
+        Assert.DoesNotContain("RunElevated", uninstall);
     }
 
     /// <summary>Scope belongs to the install directory; registered legacy updates retain their original folder.</summary>
@@ -232,7 +408,7 @@ public sealed class WindowsInstallerRecipeTests
             File.Copy(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "build-installer.ps1"), Path.Combine(recipes, "build-installer.ps1"));
             File.WriteAllText(Path.Combine(directory, "Directory.Build.props"), "<Project><PropertyGroup><Version>9.8.7</Version></PropertyGroup></Project>");
             var packages = Directory.CreateDirectory(Path.Combine(directory, "artifacts", "packages"));
-            var package = Path.Combine(packages.FullName, "AthanTime-9.8.7-win-x64-setup.exe");
+            var package = Path.Combine(packages.FullName, "AthanTime-9.8.7-Windows-x64-Setup.exe");
             File.WriteAllText(package, "previous package");
             File.WriteAllText(Path.Combine(recipes, "Sign-Code.ps1"), """
                 param([string]$Path, [switch]$CheckOnly)
@@ -244,7 +420,7 @@ public sealed class WindowsInstallerRecipeTests
                 if (-not ($args | Where-Object { $_.StartsWith('/DSIGN_SCRIPT=') })) { throw 'Uninstaller signing hook was omitted.' }
                 $output = ($args | Where-Object { $_.StartsWith('/DOUTPUT_DIR=') }).Substring(13)
                 [IO.File]::AppendAllText((Join-Path $PSScriptRoot 'phases.txt'), ('compile' + [Environment]::NewLine))
-                [IO.File]::WriteAllText((Join-Path $output 'AthanTime-9.8.7-win-x64-setup.exe'), 'new package')
+                [IO.File]::WriteAllText((Join-Path $output 'AthanTime-9.8.7-Windows-x64-Setup.exe'), 'new package')
                 $global:LASTEXITCODE = 0
                 """);
             var wrapper = Path.Combine(directory, "verify.ps1");
@@ -282,57 +458,6 @@ public sealed class WindowsInstallerRecipeTests
             Assert.Equal(new[] { "preflight", "payload", "compile", "package" }, File.ReadAllLines(Path.Combine(directory, "phases.txt")));
             Assert.Equal(failFinalSigning ? "previous package" : "new package", File.ReadAllText(package));
             Assert.Empty(Directory.EnumerateFileSystemEntries(Path.Combine(directory, "artifacts", "publish")));
-        }
-        finally { Directory.Delete(directory, recursive: true); }
-    }
-
-    /// <summary>The legacy wrapper forwards explicit options and leaves omitted version/RID selection to the shared builder.</summary>
-    [Theory(Skip = "Requires Windows PowerShell", SkipUnless = nameof(IsWindows))]
-    [InlineData("", "")]
-    [InlineData("linux-arm64", "2.3.4")]
-    [InlineData("osx-x64", "")]
-    public async Task PortableWrapperDoesNotInjectStaleDefaults(string runtime, string version)
-    {
-        var directory = Directory.CreateTempSubdirectory("athan portable recipe tests ").FullName;
-        try
-        {
-            var packaging = Directory.CreateDirectory(Path.Combine(directory, "packaging"));
-            File.Copy(Path.Combine(AppContext.BaseDirectory, "RecipeFiles", "build-portable.ps1"), Path.Combine(packaging.FullName, "build-portable.ps1"));
-            var wrapper = Path.Combine(directory, "verify.ps1");
-            File.WriteAllText(wrapper, """
-                param([string]$Runtime, [string]$Version)
-                $ErrorActionPreference = 'Stop'
-                function dotnet {
-                    [IO.File]::WriteAllLines((Join-Path $PSScriptRoot 'arguments.txt'), [string[]]$args)
-                    $global:LASTEXITCODE = 0
-                }
-                $options = @{}
-                if ($Runtime) { $options.Runtime = $Runtime }
-                if ($Version) { $options.Version = $Version }
-                & (Join-Path $PSScriptRoot 'packaging/build-portable.ps1') @options
-                """);
-            var start = new ProcessStartInfo("powershell.exe")
-            {
-                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true,
-                WorkingDirectory = Path.GetTempPath()
-            };
-            foreach (var argument in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", wrapper, "-Runtime", runtime, "-Version", version }) start.ArgumentList.Add(argument);
-            using var process = Process.Start(start)!;
-            try
-            {
-                var output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
-                var error = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
-                await process.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
-                Assert.True(process.ExitCode == 0, await output + await error);
-            }
-            finally { if (!process.HasExited) { process.Kill(); process.WaitForExit(); } }
-            var arguments = File.ReadAllLines(Path.Combine(directory, "arguments.txt"));
-            Assert.Contains(Path.Combine(directory, "tools", "InstallerBuilder"), arguments);
-            Assert.Contains("portable", arguments);
-            Assert.Equal(runtime.Length != 0, arguments.Contains("--rid", StringComparer.Ordinal));
-            Assert.Equal(version.Length != 0, arguments.Contains("--version", StringComparer.Ordinal));
-            if (runtime.Length != 0) Assert.Contains(runtime, arguments);
-            if (version.Length != 0) Assert.Contains(version, arguments);
         }
         finally { Directory.Delete(directory, recursive: true); }
     }

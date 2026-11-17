@@ -15,6 +15,11 @@ namespace AthanTime.Net;
 /// <summary>Owns desktop/tray lifetime, main-window activation and scheduled reminder windows.</summary>
 public partial class App : Application
 {
+    /// <summary>Public project home, opened only when the user chooses an external link.</summary>
+    public const string ProjectUrl = "https://github.com/Cophla/AthanTime.Net";
+    /// <summary>All published releases, including beta downloads.</summary>
+    public const string ReleasesUrl = ProjectUrl + "/releases";
+
     /// <summary>Gets the shared semantic release version, including prerelease labels but excluding source-revision metadata.</summary>
     public static string ReleaseVersion { get; } = typeof(App).Assembly
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
@@ -66,7 +71,8 @@ public partial class App : Application
             desktop.MainWindow = _window;
             CreateTrayIcon();
             _window.PrepareStartupVisibility(_window.ViewModel.StartMinimized || Environment.GetCommandLineArgs().Contains(
-                "--start-minimized", StringComparer.OrdinalIgnoreCase));
+                "--start-minimized", StringComparer.OrdinalIgnoreCase), Environment.GetCommandLineArgs().Contains(
+                "--show-window", StringComparer.OrdinalIgnoreCase));
             _window.Opened += OnMainWindowOpened;
             _window.ViewModel.Start();
             desktop.Exit += (_, _) =>
@@ -185,11 +191,17 @@ public partial class App : Application
         return new WindowIcon(stream);
     }
 
-    /// <summary>Connects duplicate-launch activation after the initial window opening/startup hiding.</summary>
+    /// <summary>Connects activation and installer shutdown after the initial window opening/startup hiding.</summary>
     private void OnMainWindowOpened(object? sender, EventArgs args)
     {
         _window!.Opened -= OnMainWindowOpened;
         _mainWindowOpened = true;
+        _singleInstance?.RegisterShutdownHandler(() => Dispatcher.UIThread.Post(() =>
+        {
+            if (_exiting) return;
+            _window!.ForceClose = true;
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.Shutdown();
+        }));
         // Register after the first Opened/start-minimized handlers; an early duplicate is coalesced until now.
         _singleInstance?.RegisterActivationHandler(QueueWindowActivation,
             exception => _logger.LogWarning(exception, "The single-instance activation channel is unavailable"));

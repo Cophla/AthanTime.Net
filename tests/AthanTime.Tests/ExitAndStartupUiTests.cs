@@ -7,6 +7,7 @@ using Avalonia.VisualTree;
 using AthanTime.Net;
 using AthanTime.Net.Services;
 using Microsoft.Extensions.Logging;
+using System.Reflection;
 
 namespace AthanTime.Tests;
 
@@ -15,6 +16,108 @@ namespace AthanTime.Tests;
 public sealed class ExitAndStartupUiTests(UiTestHost ui, ViewModelHarness harness,
     ILogger<MainWindow> logger, ILogger<WindowPositionService> positionLogger, ILogger<App> appLogger)
 {
+    /// <summary>Native move-loop messages must suppress both fitting and capturing intermediate coordinates.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task InteractiveMoveDefersFittingUntilReleaseAndHideCancelsTheGate(bool hideDuringMove) => ui.Run(() =>
+    {
+        var directory = Directory.CreateTempSubdirectory("athan-window-drag-ui-");
+        using var vm = harness.Create();
+        var path = Path.Combine(directory.FullName, "window-position.json");
+        var store = new WindowPositionService(positionLogger, path);
+        var window = new MainWindow(vm, logger, store) { ForceClose = true, CanHideToTray = true };
+        // Invoke the actual platform callback without loading Win32 or changing the real desktop.
+        var callback = typeof(MainWindow).GetMethod("ObserveWindowsMoveResize", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .CreateDelegate<Win32Properties.CustomWndProcHookCallback>(window);
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var normal = window.Position;
+            var handled = false;
+            Assert.Equal(IntPtr.Zero, callback(IntPtr.Zero, 0x0231, IntPtr.Zero, IntPtr.Zero, ref handled));
+            Assert.False(handled);
+            window.Width = 3000;
+            window.Height = 2000;
+            window.UpdateLayout();
+            var dragged = new PixelPoint(window.Screens.Primary!.WorkingArea.Right - 20, 40);
+            window.Position = dragged;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(3000, window.Width);
+            Assert.Equal(2000, window.Height);
+            Assert.Equal(dragged, window.Position);
+            Assert.False(File.Exists(path));
+            if (hideDuringMove)
+            {
+                window.Hide();
+                Assert.Equal(new WindowPosition(normal.X, normal.Y), store.Load());
+                window.ShowFromTray();
+            }
+            else
+            {
+                callback(IntPtr.Zero, 0x0232, IntPtr.Zero, IntPtr.Zero, ref handled);
+                Assert.False(handled);
+            }
+            Dispatcher.UIThread.RunJobs();
+            var frame = PixelSize.FromSize(window.FrameSize ?? new Size(window.Width, window.Height), window.DesktopScaling);
+            Assert.True(window.Screens.ScreenFromWindow(window)!.WorkingArea.Contains(new PixelRect(window.Position, frame)));
+            Assert.True(window.IsVisible);
+        }
+        finally { window.Close(); directory.Delete(recursive: true); }
+    });
+
+    /// <summary>Real window events fit both dimensions on opening, resize, normal-state return and repeated tray restoration.</summary>
+    [Fact]
+    public Task OversizedWindowFitsOnOpenAndAfterTrayAndStateRestoration() => ui.Run(() =>
+    {
+        var directory = Directory.CreateTempSubdirectory("athan-window-fit-ui-");
+        using var vm = harness.Create();
+        var path = Path.Combine(directory.FullName, "window-position.json");
+        var store = new WindowPositionService(positionLogger, path);
+        var window = new MainWindow(vm, logger, store) { ForceClose = true, CanHideToTray = true, Width = 3000, Height = 2000 };
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            AssertWindowFits();
+            Assert.False(File.Exists(path));
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                window.Hide();
+                window.Width = 3000;
+                window.Height = 2000;
+                window.ShowFromTray();
+                Dispatcher.UIThread.RunJobs();
+                AssertWindowFits();
+            }
+            window.WindowState = WindowState.Maximized;
+            window.Width = 3000;
+            window.Height = 2000;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(3000, window.Width);
+            Assert.Equal(2000, window.Height);
+            window.WindowState = WindowState.Normal;
+            Dispatcher.UIThread.RunJobs();
+            AssertWindowFits();
+            window.Width = 3000;
+            window.Height = 2000;
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            AssertWindowFits();
+        }
+        finally { window.Close(); directory.Delete(recursive: true); }
+
+        void AssertWindowFits()
+        {
+            var area = window.Screens.ScreenFromPoint(window.Position)!.WorkingArea;
+            var frame = PixelSize.FromSize(window.FrameSize ?? new Size(window.Width, window.Height), window.DesktopScaling);
+            Assert.True(area.Contains(new PixelRect(window.Position, frame)), $"{window.Position}, {frame} must fit {area}.");
+            Assert.True(window.IsVisible);
+            Assert.Equal(WindowState.Normal, window.WindowState);
+        }
+    });
+
     /// <summary>macOS shell reopen events restore an existing window without needing another process.</summary>
     [Theory]
     [InlineData(false)]
@@ -273,6 +376,51 @@ public sealed class ExitAndStartupUiTests(UiTestHost ui, ViewModelHarness harnes
             Assert.Equal(minimized, vm.StartMinimized);
             Assert.Equal(closeToTray, vm.CloseToTray);
             Assert.Equal(0, harness.Settings.Saves);
+        }
+        finally { window.ForceClose = true; window.Close(); }
+    });
+
+    [Fact]
+    public Task SetupLaunchShowsWindowWithoutChangingStartupPreference() => ui.Run(() =>
+    {
+        harness.Settings.Value.StartMinimized = true;
+        using var vm = harness.Create();
+        var window = new MainWindow(vm, logger) { CanHideToTray = true };
+        try
+        {
+            window.PrepareStartupVisibility(true, showWindow: true);
+            window.Show();
+            Assert.True(window.IsVisible);
+            Assert.Equal(WindowState.Normal, window.WindowState);
+            Assert.True(vm.StartMinimized);
+            Assert.Equal(0, harness.Settings.Saves);
+        }
+        finally { window.ForceClose = true; window.Close(); }
+    });
+
+    [Theory]
+    [InlineData(WindowCloseReason.ApplicationShutdown, false)]
+    [InlineData(WindowCloseReason.OSShutdown, false)]
+    [InlineData(WindowCloseReason.ApplicationShutdown, true)]
+    [InlineData(WindowCloseReason.WindowClosing, false)]
+    public Task NativeShutdownDoesNotHideToTray(WindowCloseReason reason, bool programmatic) => ui.Run(() =>
+    {
+        harness.Settings.Value.CloseToTray = true;
+        using var vm = harness.Create();
+        var window = new MainWindow(vm, logger) { CanHideToTray = true };
+        try
+        {
+            window.Show();
+            // Avalonia creates these arguments internally for native shutdown messages.
+            var args = (WindowClosingEventArgs)Activator.CreateInstance(typeof(WindowClosingEventArgs),
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+                null, [reason, programmatic], null)!;
+            typeof(MainWindow).GetMethod("OnClosing", System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly)!.Invoke(window, [window, args]);
+            bool nativeShutdown = OperatingSystem.IsWindows() && !programmatic &&
+                reason is WindowCloseReason.ApplicationShutdown or WindowCloseReason.OSShutdown;
+            Assert.Equal(!nativeShutdown, args.Cancel);
+            Assert.Equal(nativeShutdown, window.IsVisible);
         }
         finally { window.ForceClose = true; window.Close(); }
     });

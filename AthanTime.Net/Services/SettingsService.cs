@@ -30,7 +30,7 @@ public interface ISettingsService
 
 /// <inheritdoc />
 public sealed class SettingsService(ILogger<SettingsService> logger, ManualLocationService manualLocations,
-    string settingsPath) : ISettingsService
+    string settingsPath, Action<AppSettings>? initializeFirstRun = null) : ISettingsService
 {
     private const string DefaultResourceName = "AthanTime.Net.Data.default-settings.json";
     private const int CurrentSchemaVersion = 5;
@@ -75,7 +75,10 @@ public sealed class SettingsService(ILogger<SettingsService> logger, ManualLocat
             SetStatus("SettingsLoadFailed", profile: true);
         else
             _logger.LogInformation("No settings file exists at {Path}; defaults are used", _path);
-        return Normalize(LoadDefaults());
+        var defaults = Normalize(LoadDefaults());
+        // Never re-detect preferences after corruption, recovery or a schema mismatch.
+        if (!primaryFailed && !backupFailed && !futureSchema) initializeFirstRun?.Invoke(defaults);
+        return defaults;
     }
 
     /// <inheritdoc />
@@ -280,7 +283,9 @@ public sealed class SettingsService(ILogger<SettingsService> logger, ManualLocat
         settings.Adhkar ??= new();
         settings.Adhkar.IntervalMinutes = Math.Clamp(settings.Adhkar.IntervalMinutes, 1, 1440);
         settings.Adhkar.AudioFiles = (settings.Adhkar.AudioFiles ?? [])
-            .Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            .Where(path => !string.IsNullOrWhiteSpace(path)
+                && !path.Equals("bundled:alhamdulillah", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (upgrading && !settings.Adhkar.Enabled && settings.Adhkar.AudioFiles.Count == 0)
             settings.Adhkar.AudioFiles = BundledAudio.AdhkarFiles.ToList();
         settings.SavedLocations ??= [];

@@ -1,9 +1,96 @@
 # Release checklist
 
+Current local preparation: **v1.0.2-beta.15**. Use its versioned folder under
+`artifacts/releases/`, [release notes](releases/v1.0.2-beta.15.md) and recorded
+build evidence. Check all seven download hashes before uploading; mark the GitHub
+release as a prerelease. The beta.15 request authorizes the reviewed release commit and publication; report the actual result.
+The native desktop, signing and recording-rights limits below remain applicable.
+
+For uninstall completion, check Only me, All users through the elevated child,
+already elevated removal and setup's Uninstall action: one success message after
+successful interactive removal, none after cancel/failure or in silent mode.
+Dismiss the message and verify exit code zero. Use disposable Windows sessions;
+Mac/Linux retain their native removal workflows and completion feedback.
+
+Beta.13 preparation checks About summaries in all eight languages/themes, exact
+project/download link targets and explicit link activation through a fake browser
+action. Review rendered English/Arabic screenshots and RTL release-string order.
+Keep owned About UI with the shared secondary-window base. Native browser launch
+and platform signing/installer checks require matching hosts; source preparation
+does not publish the release.
+
+For the next requested release, verify Unix executable modes after extraction on
+both Mac CPUs and Linux CPUs. Mac portable payloads live inside
+`Athan Time.app/Contents/MacOS`; inspect their runtime files at that prefix.
+Test Finder opening and the .command helper on macOS 15+, and verify that closing
+Terminal leaves the app running. On Linux, test detached .sh startup and a menu
+shortcut from a folder containing spaces/metacharacters. Test the optional apt
+helper only in a disposable supported Ubuntu/Debian environment. Confirm all
+launchers use the bundled apphost and keep the self-contained runtime guard.
+Automatic DST reports need the city, comparison dates and observed prayer times.
+
 Run this for every release, including data-only updates. No runtime updater or
 network access is required. A completed build is not a completed desktop test.
 
+For Windows setup, verify automatic graceful exit from tray and playback before update, unchanged profile/login settings, visible interactive completion, silent no-launch, both scopes and alternate-admin UAC launch identity in Sandbox. Confirm cancelled/failed setup does not launch, legacy shutdown refusal retains Retry/Cancel, and missing shell/token gives a manual Start-menu fallback. On macOS/Linux verify the documented quit/replace/desktop-launch workflow.
+
+Before the next release, test clean per-user regional defaults (supported and
+unsupported UI language, differing region/zone, Windows-to-IANA mapping, aliases,
+UTC/unknown zones, 12/24-hour formats), review/confirm city in all eight languages
+and both themes, and ensure existing/recovered profiles never change. Test
+unchecked/checked Windows uninstall, silent preservation, All-users alternate-admin
+UAC identity, busy app and cleanup failure. Verify known files are removed while
+other users, recordings and unrelated files remain. In native Mac/Linux sessions,
+verify consent/cancel/root refusal in the removal helper and default native
+uninstall preservation. Keep link/junction permission limitations explicit.
+The beta.13 preparation includes these changes; older assets retain their earlier snapshot.
+
+For the uninstall fix, run the Sandbox-only Test-UninstallRunningApp.ps1 with the
+local validation setup. Check All users plus a running tray app, shutdown before
+confirmation, checked cleanup and recording preservation. Also test Only me,
+late mutex release, access/link failures, native launch error/timeout, Retry/Cancel
+and alternate-admin credentials. Verify Ignore on optional cleanup failure proceeds with app removal and keeps remaining settings, while Abort stops removal. The refreshed local packages in `artifacts/packages` include these fixes; historical beta.13 release-folder assets retain their earlier snapshot.
+
+Also verify setup's maintenance radio options for each registered scope and
+`/Uninstall` with explicit/default scope. Cancellation must never relaunch the app,
+including the elevated setup relay. Test shutdown with visible/tray/audio states,
+pending startup, unavailable pipes and older payloads without the capability marker.
+Verify the self-contained payload includes `Data/desktop-control.json` on all five
+RIDs. Confirm uninstall keeps `%APPDATA%\AthanTime` unless cleanup is checked;
+no storage migration is part of this change. Native tests remain Sandbox-only.
+
 ## Every change
+
+For cleanup/alignment changes, preserve current packages and both repositories;
+check canonical data/media/license references and migrations before removal. Keep
+only current release drafts and compact historical evidence. Rebuild/test from
+cleared caches, verify actual checkbox centers across eight languages/themes and
+wrapped three-state text, inspect English/Arabic captures, and rebuild affected
+packages. Remove regenerated staging/build caches after their checks are recorded.
+
+For Windows cleanup access-denied fixes, launch uninstall normally as the desktop
+user, choose cleanup, verify that the app exits and only that user's owned settings
+are removed, then approve UAC for shared-file removal. Repeat through setup's
+Uninstall choice, alternate-admin credentials, UAC cancellation after cleanup,
+unchecked/silent removal and an already elevated launch (checkbox disabled/settings
+kept). The silent elevated child must never perform user cleanup. Start the native
+Sandbox procedure with a genuinely unelevated token; otherwise record a missing
+prerequisite rather than claiming this flow passed.
+
+For package-guide changes, check README.txt against packaging/README.txt in the
+installed Windows payload and at the root of all five portable ZIPs. Check the
+Mac/Linux START-HERE files against source and their executable launchers. Confirm
+missing guides fail publishing, regenerate the source ZIP after final docs, and
+verify every listed package checksum plus source inventory. Keep the download-folder
+README, build information and historical-release distinction aligned.
+
+For the Ubuntu icon fix, verify both Linux ZIPs contain the canonical PNG; run the
+shortcut helper as a normal user in an isolated XDG directory, check its installed
+icon bytes and Icon/StartupWMClass keys, repeat registration and test a missing
+icon. On native Ubuntu GNOME, test menu launch, direct launch after registration,
+login startup and replacing a previously pinned generic entry, including XWayland
+under a Wayland session. Verify native DEB grouping separately. Do not infer native
+dock behavior from the headless/script fixtures.
 
 - [ ] Complete the canonical [change completion rule](../AGENTS.md#change-completion-rule)
   before handing off any change, including work that does not create a release.
@@ -41,7 +128,15 @@ network access is required. A completed build is not a completed desktop test.
   builder, self-contained publishing and RID-matching audio/graphics/SQLite assets.
   A release must not silently become dependent on a separately installed .NET
   runtime. Native desktop checks and signing status are separate release gates.
+- [ ] Check the actual runtime configuration and bundled CoreLib/coreclr/hostfxr
+  in every application package, as well as RID-matching SQLite/audio libraries.
+  Verify [download names](PACKAGING.md#release-cleanup-2026-11-11) agree across
+  the builder, recipes, native smoke procedures, CI, checksums and GitHub notes.
+  Source ZIPs are developer inputs, not self-contained application downloads.
 - [ ] Set `Directory.Build.props` version; keep one Release edition per OS.
+  Build all six solution projects with the .NET 11 SDK. Verify the shared target
+  reaches the app, tests and every tool. Check runtime/OS support and native SQLite,
+  miniaudio and graphics libraries on every RID; the native macOS minimum is 15.
   For a beta, verify the translated label in the header/title in all eight
   languages and both themes, and the full prerelease version in About/support
   drafts, setup/uninstall display names and package filenames. Keep upgrade keys,
@@ -179,7 +274,7 @@ other architectures or native desktop integrations verified from those alone.
 | Windows 10 qualifying edition/build x64 (best effort) | UNVERIFIED |
 | Ubuntu 22.04 x64 | UNVERIFIED |
 | Ubuntu 24.04 x64 and ARM64 | UNVERIFIED |
-| macOS 14+ Intel x64 and Apple Silicon ARM64 | UNVERIFIED |
+| macOS 15+ Intel x64 and Apple Silicon ARM64 (.NET 11 baseline) | UNVERIFIED |
 
 - [ ] Install, launch centered on the first run without an installed .NET runtime, close/reopen,
   upgrade while preserving settings, and uninstall. Respect publisher/security
@@ -196,10 +291,11 @@ other architectures or native desktop integrations verified from those alone.
   Also check cross-scope folder rejection and UAC approval/cancellation using both
   an administrator and a standard account (including alternate admin credentials).
   Verify that silent elevated operations relay their actual exit code, and that
-  machine uninstall leaves every user's settings/login choices untouched. Include
+  machine uninstall preserves all profiles/login choices unless the interactive desktop user explicitly selects cleanup; all other users remain untouched. Include
   running-app locks from another user's session for machine updates/removal.
   Continue to check
-  locked/running-app rejection, matching-only startup cleanup and preservation of
+  locked-file/refused-shutdown rejection, successful graceful running-app update,
+  matching-only startup cleanup and preservation of
   user-added recordings during uninstall. A stale uninstaller must preserve a
   newer installation's shared registration/shortcut. Use the publish-generated uninstall
   list; never recursively delete an installation folder containing user files.
@@ -227,6 +323,19 @@ other architectures or native desktop integrations verified from those alone.
   persists without changing size or start-minimized preferences. Repeat with
   maximized/fullscreen/minimized states, negative-coordinate monitors, different
   DPI scales, taskbar/dock work areas and a disconnected/rearranged monitor.
+  Test mixed desktop scaling (100%, 125%, 150%, 175%, 200%), negative monitor
+  coordinates, a removed monitor and work-area/taskbar changes. Verify the entire
+  normal native frame fits after opening, moving monitors, repeated hide/restore
+  and returning from maximized/minimized states; those states themselves must
+  stay untouched. Check native borders/title bar, desktop vs Retina rendering
+  coordinates, tiny-work-area minimum relaxation and later minimum restoration.
+  Do not change the real desktop configuration in automated tests.
+  On Windows, include actual title-bar pointer drags in both directions across
+  mixed-DPI monitors. Verify native move entry/exit, no fitting changes while the
+  loop is active, correct hosting-monitor selection, and readable settled header,
+  tabs and content. Test hiding/cancelling a move so the gate cannot stay active.
+  Programmatic moves and final bounds alone do not cover this regression. Keep
+  continuous desktop-capture/GPU behavior distinct from settled window checks.
   Test a missing/damaged/unwritable `window-position.json`: centered fallback or
   a usable window/save retry is required. Verify settings transfer excludes this
   device-local file and updates/uninstall preserve it with the profile. Record

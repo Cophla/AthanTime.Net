@@ -6,6 +6,69 @@ namespace AthanTime.Tests;
 /// <summary>Checks the Release guard/activation channel and Debug exception across isolated processes without desktop/profile access.</summary>
 public sealed class SingleInstanceTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ShutdownExitsTheOwnerAndWaitsForItsLease(bool delayed)
+    {
+        var name = "athan-shutdown-" + Guid.NewGuid().ToString("N");
+        using var owner = Start(name, activationMode: "shutdown-owner", delayed: delayed);
+        try
+        {
+            Assert.Equal("acquired", await ReadStatus(owner));
+            using var client = Start(name, activationMode: "shutdown");
+            try
+            {
+                if (delayed) await owner.StandardInput.WriteLineAsync("ready");
+                Assert.Equal("shutting-down", await ReadStatus(owner));
+                Assert.Equal("shutdown", await ReadStatus(client));
+                await Exited(owner);
+                await Exited(client);
+                Assert.Equal(0, owner.ExitCode);
+                Assert.Equal(0, client.ExitCode);
+                using var next = Start(name);
+                try { Assert.Equal("acquired", await ReadStatus(next)); }
+                finally { Stop(next); }
+            }
+            finally { Stop(client); }
+        }
+        finally { Stop(owner); }
+    }
+
+    [Fact]
+    public async Task ShutdownRejectsUnavailableChannelWithoutAffectingAnotherOwner()
+    {
+        var name = "athan-shutdown-missing-" + Guid.NewGuid().ToString("N");
+        using var owner = Start(name, activationMode: "activation-owner");
+        try
+        {
+            Assert.Equal("acquired", await ReadStatus(owner));
+            using var client = Start(name + "-other", activationMode: "shutdown");
+            try { Assert.Equal("unavailable", await ReadStatus(client)); await Exited(client); }
+            finally { Stop(client); }
+            await Activate(name, owner.Id);
+            Assert.Equal("activated", await ReadStatus(owner));
+        }
+        finally { Stop(owner); }
+    }
+
+    [Fact]
+    public async Task ShutdownPreservesAPrimaryFromAnotherExecutable()
+    {
+        var name = "athan-shutdown-path-" + Guid.NewGuid().ToString("N");
+        using var owner = Start(name, activationMode: "activation-owner");
+        try
+        {
+            Assert.Equal("acquired", await ReadStatus(owner));
+            using var client = Start(name, activationMode: "shutdown", appHost: true);
+            try { Assert.Equal("unavailable", await ReadStatus(client)); await Exited(client); }
+            finally { Stop(client); }
+            await Activate(name, owner.Id);
+            Assert.Equal("activated", await ReadStatus(owner));
+        }
+        finally { Stop(owner); }
+    }
+
     [Fact]
     public async Task FailedActivationIsReportedAndLaterRequestsStillWork()
     {
@@ -348,9 +411,11 @@ public sealed class SingleInstanceTests
         finally { Stop(recovered); }
     }
 
-    private static Process Start(string name, bool abandon = false, bool startup = false, string? activationMode = null, bool delayed = false)
+    private static Process Start(string name, bool abandon = false, bool startup = false, string? activationMode = null, bool delayed = false, bool appHost = false)
     {
-        var start = new ProcessStartInfo("dotnet")
+        var start = new ProcessStartInfo(appHost
+            ? Path.Combine(AppContext.BaseDirectory, "SingleInstanceProbe", OperatingSystem.IsWindows() ? "SingleInstanceProbe.exe" : "SingleInstanceProbe")
+            : "dotnet")
         {
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -358,7 +423,7 @@ public sealed class SingleInstanceTests
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
-        start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "SingleInstanceProbe", "SingleInstanceProbe.dll"));
+        if (!appHost) start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "SingleInstanceProbe", "SingleInstanceProbe.dll"));
         start.ArgumentList.Add(name);
         if (abandon) start.ArgumentList.Add("abandon");
         if (activationMode is not null) start.ArgumentList.Add(activationMode);

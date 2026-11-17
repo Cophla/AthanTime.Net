@@ -63,6 +63,7 @@ public sealed class UnixInstallerRecipeTests
                   done
                   mkdir -p "$output"
                   printf '%s' 'Payload fixture; never executed.' > "$output/AthanTime.Net"
+                  printf '%s' 'User guide fixture' > "$output/README.txt"
                 }
                 dpkg-deb() {
                   local stage="${@: -2:1}" output="${@: -1}"
@@ -77,6 +78,8 @@ public sealed class UnixInstallerRecipeTests
                     shift
                   done
                   cp "$stage/Athan Time.app/Contents/Info.plist" "$PWD/observed-info.plist"
+                  cp "$stage/README.txt" "$PWD/observed-readme"
+                  cp "$stage/START-HERE.txt" "$PWD/observed-start-here"
                   printf '%s' 'Fake DMG output; never mounted.' > "$output"
                 }
                 # Link creation is an OS smoke check; Git Bash cannot create all Unix dangling links.
@@ -112,24 +115,34 @@ public sealed class UnixInstallerRecipeTests
             Assert.Contains("[-p:PublishSingleFile=false]", arguments);
             Assert.Contains($"[{rid}]", arguments);
             Assert.Contains($"[-p:Version={expectedVersion}]", arguments);
-            var filename = recipe == "linux" ? $"AthanTime-{expectedVersion}-{(arm ? "arm64" : "amd64")}.deb" : $"AthanTime-{expectedVersion}-{rid}.dmg";
+            var platform = recipe == "linux" ? (arm ? "Linux-arm64" : "Linux-x64")
+                : (arm ? "macOS-AppleSilicon-arm64" : "macOS-Intel-x64");
+            var filename = $"AthanTime-{expectedVersion}-{platform}.{(recipe == "linux" ? "deb" : "dmg")}";
             Assert.True(File.Exists(Path.Combine(repository, "artifacts", "packages", filename)));
             if (recipe == "linux")
             {
                 var control = File.ReadAllText(Path.Combine(repository, "observed-control"));
                 Assert.Contains($"Version: {expectedVersion.Replace('-', '~')}", control);
                 Assert.Contains($"Architecture: {(arm ? "arm64" : "amd64")}", control);
+                Assert.Contains("Homepage: https://github.com/Cophla/AthanTime.Net", control);
                 Assert.Contains($"Release: {expectedVersion}.", control);
                 Assert.Contains($"Name=Athan Time {expectedVersion}", File.ReadAllText(Path.Combine(repository, "observed-desktop")));
+                var desktop = File.ReadAllText(Path.Combine(repository, "observed-desktop"));
+                Assert.Contains("Icon=athan-time", desktop);
+                Assert.Contains("StartupWMClass=" + typeof(AthanTime.Net.App).Assembly.GetName().Name, desktop);
             }
             else
             {
+                Assert.Equal("User guide fixture", File.ReadAllText(Path.Combine(repository, "observed-readme")));
+                Assert.Contains("macOS 15", File.ReadAllText(Path.Combine(repository, "observed-start-here")));
                 var plist = XDocument.Load(Path.Combine(repository, "observed-info.plist"));
                 string Value(string key) => plist.Descendants("key").Single(element => element.Value == key).ElementsAfterSelf("string").First().Value;
                 Assert.Equal(expectedVersion.Split('-')[0], Value("CFBundleVersion"));
                 Assert.Equal(expectedVersion.Split('-')[0], Value("CFBundleShortVersionString"));
                 Assert.Equal($"Athan Time {expectedVersion}", Value("CFBundleDisplayName"));
                 Assert.Equal($"Athan Time {expectedVersion}", Value("CFBundleGetInfoString"));
+                // Match the .NET 11 supported macOS baseline for both Intel and Apple Silicon.
+                Assert.Equal("15.0", Value("LSMinimumSystemVersion"));
             }
             Assert.Empty(Directory.EnumerateFileSystemEntries(Path.Combine(repository, "temporary staging")));
         }

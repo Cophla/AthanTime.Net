@@ -10,7 +10,7 @@
   <key>CFBundleShortVersionString</key><string>@NUMERIC_VERSION@</string>
   <key>CFBundleVersion</key><string>@NUMERIC_VERSION@</string>
   <key>CFBundleGetInfoString</key><string>Athan Time @VERSION@</string>
-  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSMinimumSystemVersion</key><string>15.0</string>
   <key>NSHighResolutionCapable</key><true/>
 </dict>
 </plist>

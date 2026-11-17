@@ -18,6 +18,98 @@ namespace AthanTime.Tests;
 [Collection("UI")]
 public sealed class WindowAppearanceTests(UiTestHost ui, ViewModelHarness harness, ILogger<MainWindow> logger)
 {
+    [Fact]
+    public Task CheckboxCaptionsAlignWithIndicatorsInEveryLanguageAndTheme() => ui.Run(() =>
+    {
+        using var vm = harness.Create();
+        var main = new MainWindow(vm, logger) { ForceClose = true };
+        try
+        {
+            main.Show();
+            main.FindControl<TabControl>("MainPages")!.SelectedIndex = 1;
+            main.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 3;
+            foreach (var language in vm.Languages)
+            foreach (var dark in new[] { false, true })
+            {
+                vm.SelectedLanguage = language; vm.UseDarkMode = dark;
+                Dispatcher.UIThread.RunJobs(); main.UpdateLayout();
+                var checks = main.GetVisualDescendants().OfType<CheckBox>().Where(control => control.Bounds.Height > 0).ToArray();
+                Assert.True(checks.Length >= 7);
+                Capture(main, "checkboxes-general", language.Code, dark);
+                foreach (var check in checks) AssertCheckboxAlignment(check);
+                var wrapped = new CheckBox { Width = 200, IsThreeState = true, Content = string.Join(" ", Enumerable.Repeat(vm["StartOnLogin"], 4)) };
+                var popup = new Window
+                {
+                    Width = 260, Height = 300, Content = wrapped,
+                    FlowDirection = vm.FlowDirection, RequestedThemeVariant = vm.SelectedTheme
+                };
+                try
+                {
+                    popup.Show(main); Dispatcher.UIThread.RunJobs(); popup.UpdateLayout();
+                    Assert.True(wrapped.Bounds.Height > wrapped.MinHeight);
+                    foreach (var state in new bool?[] { false, true, null })
+                    {
+                        wrapped.IsChecked = state; Dispatcher.UIThread.RunJobs(); popup.UpdateLayout();
+                        AssertCheckboxAlignment(wrapped);
+                    }
+                }
+                finally { popup.Close(); }
+            }
+        }
+        finally { main.Close(); }
+    });
+
+    private static void AssertCheckboxAlignment(CheckBox check)
+    {
+        var indicator = check.GetVisualDescendants().OfType<Border>().Single(control => control.Name == "NormalRectangle");
+        var label = check.GetVisualDescendants().OfType<TextBlock>().Single(control => control.Text == check.Content as string);
+        static Rect BoundsIn(Control control, Control parent)
+        {
+            var first = control.TranslatePoint(default, parent)!.Value;
+            var last = control.TranslatePoint(new Point(control.Bounds.Width, control.Bounds.Height), parent)!.Value;
+            return new Rect(new Point(Math.Min(first.X, last.X), Math.Min(first.Y, last.Y)),
+                new Point(Math.Max(first.X, last.X), Math.Max(first.Y, last.Y)));
+        }
+        var mark = BoundsIn(indicator, check); var caption = BoundsIn(label, check);
+        var row = (Control)indicator.GetVisualParent()!;
+        Assert.True(Math.Abs(mark.Center.Y - caption.Center.Y) <= 1,
+            $"'{check.Content}': indicator {mark}, caption {caption}, row {row.Bounds} ({row.VerticalAlignment}), checkbox {check.Bounds}");
+        Assert.True(caption.Right <= mark.Left || mark.Right <= caption.Left,
+            $"'{check.Content}': overlapping indicator {mark} and caption {caption}, direction {check.FlowDirection}");
+    }
+
+    [Fact]
+    public Task FirstRunCityReviewIsTranslatedAndConfirmationHidesIt() => ui.Run(() =>
+    {
+        harness.Settings.Value.LocationNeedsConfirmation = true;
+        using var vm = harness.Create();
+        var window = new MainWindow(vm, logger) { ForceClose = true };
+        try
+        {
+            window.Show();
+            foreach (var language in vm.Languages)
+            foreach (var dark in new[] { false, true })
+            {
+                vm.SelectedLanguage = language;
+                vm.UseDarkMode = dark;
+                Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+                var banner = window.FindControl<Grid>("FirstRunLocationBanner")!;
+                Assert.True(banner.IsVisible);
+                Assert.Contains(banner.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == vm["FirstRunLocationHelp"]);
+                var button = banner.GetVisualDescendants().OfType<Button>().Single();
+                Assert.Equal(vm["ConfirmCity"], button.Content);
+                Assert.NotEqual("ConfirmCity", button.Content);
+                Assert.True(button.Bounds.Width > 0);
+            }
+            window.FindControl<Grid>("FirstRunLocationBanner")!.GetVisualDescendants().OfType<Button>().Single()
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(vm.NeedsLocationConfirmation);
+            Assert.False(window.FindControl<Grid>("FirstRunLocationBanner")!.IsVisible);
+        }
+        finally { window.Close(); }
+    });
+
     /// <summary>Checks actual rendered button states and mouse/keyboard activation in both reading directions.</summary>
     [Fact]
     public Task ActionButtonsKeepTheSharedPaletteAcrossInteractionStates() => ui.Run(() =>
@@ -139,6 +231,9 @@ public sealed class WindowAppearanceTests(UiTestHost ui, ViewModelHarness harnes
         {
             main.FindControl<TabControl>("MainPages")!.SelectedIndex = 1;
             main.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 3;
+            Dispatcher.UIThread.RunJobs();
+            foreach (var name in new[] { "ProjectPageButton", "ReleasesPageButton" })
+                Assert.True(main.FindControl<Button>(name)!.IsEffectivelyVisible);
             foreach (var language in vm.Languages)
             foreach (var dark in new[] { false, true })
             {
@@ -146,10 +241,21 @@ public sealed class WindowAppearanceTests(UiTestHost ui, ViewModelHarness harnes
                 Dispatcher.UIThread.RunJobs(); main.UpdateLayout();
                 foreach (var caption in new[] { vm.HelpLabel, vm.AboutLabel })
                 {
+                    Assert.Equal(vm["ProjectPage"], main.FindControl<Button>("ProjectPageButton")!.Content);
+                    Assert.Equal(vm["ReleasesPage"], main.FindControl<Button>("ReleasesPageButton")!.Content);
                     Click(main, caption);
                     var dialog = Assert.Single(main.OwnedWindows);
                     AssertAppearance(main, dialog, vm);
                     Assert.Equal(caption, dialog.Title);
+                    if (caption == vm.AboutLabel)
+                    {
+                        Assert.IsType<AboutWindow>(dialog);
+                        var links = dialog.GetVisualDescendants().OfType<Button>()
+                            .Where(button => button.Name is "AboutProjectLink" or "AboutReleasesLink").ToArray();
+                        Assert.Equal(2, links.Length);
+                        Assert.Equal(new[] { App.ProjectUrl, App.ReleasesUrl },
+                            links.Select(link => Assert.IsType<TextBlock>(link.Content).Text));
+                    }
                     Capture(dialog, caption == vm.HelpLabel ? "help" : "about", language.Code, dark);
                     Click(dialog, vm.OkLabel);
                     Assert.False(dialog.IsVisible);
@@ -157,6 +263,45 @@ public sealed class WindowAppearanceTests(UiTestHost ui, ViewModelHarness harnes
             }
         }
         finally { foreach (var child in main.OwnedWindows.ToArray()) child.Close(); main.Close(); }
+    });
+
+    [Fact]
+    public Task AboutSummaryUpdatesWhileOpenAndLinksInvokeTheApprovedBrowserAction() => ui.Run(() =>
+    {
+        using var vm = harness.Create();
+        var main = new MainWindow(vm, logger) { ForceClose = true };
+        var opened = new List<string>();
+        var about = new AboutWindow(vm, url => { opened.Add(url); return Task.CompletedTask; });
+        try
+        {
+            main.Show();
+            about.Show(main);
+            Assert.Empty(opened);
+            foreach (var language in vm.Languages)
+            foreach (var dark in new[] { false, true })
+            {
+                vm.SelectedLanguage = language;
+                vm.UseDarkMode = dark;
+                Dispatcher.UIThread.RunJobs();
+                AssertAppearance(main, about, vm);
+                var summary = about.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "AboutSummary");
+                Assert.Equal(vm.AboutText, summary.Text);
+                var version = about.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "AboutVersion");
+                Assert.Equal(vm.AppVersion, version.Text);
+                Assert.Equal(FlowDirection.LeftToRight, version.FlowDirection);
+                Assert.Equal(vm.AboutLabel, about.Title);
+            }
+            foreach (var name in new[] { "AboutProjectLink", "AboutReleasesLink" })
+            {
+                var link = about.GetVisualDescendants().OfType<Button>().Single(button => button.Name == name);
+                var label = Assert.IsType<TextBlock>(link.Content);
+                Assert.Equal(FlowDirection.LeftToRight, label.FlowDirection);
+                Assert.Equal(TextDecorationLocation.Underline, Assert.Single(label.TextDecorations!).Location);
+                link.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }
+            Assert.Equal(new[] { App.ProjectUrl, App.ReleasesUrl }, opened);
+        }
+        finally { about.Close(); main.Close(); }
     });
 
     private static void AssertAppearance(MainWindow main, Window secondary, MainViewModel vm)

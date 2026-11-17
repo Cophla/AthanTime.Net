@@ -8,7 +8,7 @@ edition for users. Users switch detailed diagnostic logging on or off in Setting
 without reinstalling or restarting.
 Source/IDE Debug runs allow concurrent development instances; packaged Release
 builds retain the per-user single-instance guard regardless of logging or runtime
-environment variables. See [running and verification](../README.md#run-and-verify).
+environment variables. See [desktop lifecycle rules](../AGENTS.md#desktop-safety).
 The opt-in Start on login setting uses the installed executable path. Windows uses
 the current-user Run key, Linux an XDG autostart desktop entry, and macOS a
 current-user LaunchAgent. Moving a portable app after enabling startup leaves a
@@ -31,9 +31,720 @@ public-repository CI builds/tests/packages all five RIDs with
 session and is disabled for private repositories to avoid billed runner minutes.
 Local packaging remains independent of GitHub.
 
+## Beta15 release (2026-11-17)
+
+Version **1.0.2-beta.15** includes successful-uninstall confirmation and the
+preceding installer, profile-cleanup, Linux icon, audio, countdown and UI fixes.
+The owner reported that initial tests look fine on November 17; no platform/test
+matrix was supplied, so this is feedback rather than native certification.
+Windows x64, Linux x64/ARM64 and macOS Intel/Apple Silicon remain self-contained;
+macOS requires 15+. The release directory is `artifacts/releases/v1.0.2-beta.15/`.
+Build/test/package/source evidence is under `artifacts/beta15-preparation/`.
+
+Use the existing public main commit as the parent of the GitHub release commit.
+Preserve both older local repositories and never push the original local history.
+Clone downloads stalled; the GitHub Git-data API can upload reviewed Git blobs,
+retain unrelated public files, and advance main without force or history replacement.
+Verify source-tree parity and public author identity before publishing the tag.
+Native desktop/UAC coverage, Windows signing, macOS notarization and recording
+redistribution-rights limitations remain as documented in the release notes.
+
+## Windows uninstall completion (2026-11-17)
+
+Successful interactive Windows removal now displays "Athan Time was uninstalled
+successfully." The normal NSIS success callback owns the message. For All users,
+the original interactive parent calls that same callback only after the silent
+elevated child returns zero. Silent runs skip the dialog; cancelled UAC and failed
+children keep their exit codes and never report success. Setup's Uninstall action
+delegates to the same installed uninstaller, so it uses the same feedback.
+
+This change adds no application service, dependency or translated app caption.
+The existing English Windows installer owns this native message. macOS Finder,
+Linux package-manager and portable/manual removal workflows are unchanged;
+settings-cleanup helpers do not claim to remove the application itself.
+The Sandbox-only uninstall procedure now checks and acknowledges the success
+dialog and verifies the resulting exit code. Native UAC/dialog checks still need
+a disposable, unelevated Windows desktop session; never run the installer on the
+host for validation. Rebuild Windows setup and reviewed source/checksums for this
+change; existing portable payload bytes do not change.
+
+Windows x64 checks on November 17 passed Debug and Release builds with zero
+warnings/errors and 528 tests in each configuration, plus one symbolic-link
+permission skip each. NSIS compiled the updated callback and elevated-parent
+branch. Logs and package/source hash verification are under
+`artifacts/uninstall-completion-20261117/`. The actual completion dialog and UAC
+paths remain unverified on a disposable desktop; no host uninstall was performed.
+
+## Cleanup and checkbox alignment (2026-11-16)
+
+The requested cleanup removed 27 generated targets (10.13 GiB), including retired
+release downloads, abandoned publish staging, older validation installers and
+build/test caches. The current `artifacts/packages/`, both Git repositories and
+cached NSIS tool were preserved. Small historical reports/reproducers are grouped
+in `artifacts/evidence/history-before-cleanup-20261116.zip`; paths in older dated
+notes below describe their original locations. The superseded beta.7-beta.12
+release drafts were removed; the current notes remain under docs/releases/.
+Source hash parity passed during filesystem cleanup. Detailed inventory and
+checks are under `artifacts/cleanup-20261116/`.
+
+The unused-private-member analyzer reported no candidates. Required upgrade/settings
+migrations, source data, assets, licenses and offline-builder/test references remain.
+The retired installer maintenance exit-code relay was removed: maintenance now
+finishes in its original parent before elevation, and install children skip that
+page. Existing cancellation and no-launch checks cover this simpler path.
+
+Checkbox captions were centered in 38-pixel rows while Compact Fluent's indicator
+row stayed top-aligned. Shared checked/unchecked/indeterminate state styles now
+center the indicator in taller and wrapped rows without replacing the native
+template. Duplicate checkbox styles were merged. Regression checks compare actual
+indicator/caption geometry in eight languages and both themes, normalize RTL
+corners and cover wrapped three-state controls. English/Arabic captures are retained
+with current evidence. This shared Avalonia change applies across all five targets;
+native Linux/macOS UI checks remain separate.
+
+Fresh-cache Windows x64 / SDK 11.0.100 Debug and Release builds passed with zero
+warnings/errors. Each suite passed 527 tests with one symbolic-link permission skip
+(528 total). Rendered English/Arabic dark/light alignment captures were inspected;
+the regression also covers wrapped text in all three checkbox states. Updated
+package hashes and current-source parity are recorded in artifacts/packages/BUILD-INFO.json.
+
+## Uninstall access-denied launch fix (2026-11-16)
+
+The new screenshot reports `Starting as desktop user (Windows error 5)` with
+result -1. This is a native child-launch access denial, before app cleanup runs;
+it is distinct from cleanup exit code 5 (linked-path refusal). The screenshot
+identifies the failing launch stage but does not establish why Windows rejected
+that token/process request.
+
+The revised flow keeps confirmation and optional cleanup in the original
+unelevated uninstaller. It uses the normal current-user command launcher, then
+starts an elevated silent child only to remove All users registration/files.
+The child preserves profiles and cannot re-enter cleanup. Already elevated runs
+disable the checkbox, keep settings, and ask the user to start uninstall normally.
+The uninstaller no longer compiles the desktop-token launch branch. Setup chooses
+Install/update or Uninstall before requesting elevation, preserving this flow when
+removal is started through setup. Existing Restart Manager/file guards, exact
+payload deletion, busy retries and explicit Retry/Ignore/Abort remain.
+
+The settings page/README explain that selected user cleanup happens before the
+later administrator prompt; cancelling that prompt does not restore preferences.
+Pure/script tests check this order, elevated preservation and silent-child behavior.
+The Sandbox procedure now requires an unelevated desktop user at entry; the old
+elevated-logon procedure cannot certify this path. Matching Windows native/UAC,
+alternate-admin and already-elevated runs remain required. No host installer or
+security-policy change is part of these checks. macOS/Linux cleanup is unchanged.
+Historical token-based uninstall notes below describe earlier builds.
+
+Validation on Windows x64 / SDK 11.0.100 (2026-11-16): Debug and Release builds
+passed without warnings/errors; each suite passed 526 tests with one symbolic-link
+permission skip (527 total). NSIS compilation/preprocessing passed, and the expanded
+uninstaller user-launch function contains no desktop-token process-creation branch;
+setup's completion fallback is retained. No native uninstall/UAC execution is
+claimed. Evidence is under `artifacts/package-readme-20261116/`.
+
+## Package README and freshness checks (2026-11-16)
+
+`packaging/README.txt` is now the shared plain-text guide, published with every
+platform payload and installed by Windows setup. Every portable ZIP exposes it at
+its root, including beside the macOS bundle. The native Mac recipe also stages
+README/START-HERE beside the app in the disk image. Mac/Linux START-HERE.txt links the
+guide and retains the platform's startup/OS-library details. Publish guards reject
+a missing README; archive tests check its root placement, bytes and file mode on
+all five targets. The guide adds no runtime service or dependency.
+
+The latest local set stays in `artifacts/packages/`, with a package-selection
+README.md, seven downloads, build information and checksums. Rebuild setup and all
+five portable archives when guide inputs change; refresh the source ZIP after
+final documentation updates. Verify source/guide/helper hashes, current app-DLL
+parity, the exact common Windows payload, runtime/native CPU and Unix permissions.
+Use BUILD-INFO.json and SHA256SUMS.txt as freshness evidence, not file timestamps.
+Earlier release folders and the older prepared Git repository remain historical.
+No version bump or GitHub publication is part of this update.
+
+The existing engineering guide and requirements own this contract. README-only
+text would need consistency checks; the publish/archive changes also require
+Debug/Release tests. Native DEB/DMG and desktop behavior still need matching hosts.
+
+## Ubuntu dock icon registration (2026-11-16)
+
+The supplied Ubuntu screenshot shows the correct tray icon and a generic dock gear.
+Source inspection found the portable shortcut omitted both `Icon` and
+`StartupWMClass`; the DEB entry omitted the class. The PNG artwork itself was
+not the missing piece. Avalonia defaults to X11/XWayland and its entry assembly
+name for WM_CLASS, as documented in [desktop integration options](https://docs.avaloniaui.net/docs/platform-specific-guides/linux#desktop-integration-options).
+[Desktop-entry keys](https://specifications.freedesktop.org/desktop-entry/latest/recognized-keys.html)
+define the icon name and window matching hint.
+
+Both Linux portable CPU packages now include `athan-time.png`. The opt-in shortcut
+helper installs it into the user's XDG hicolor theme and sets `Icon=athan-time`
+and `StartupWMClass=AthanTime.Net`; the DEB desktop template sets the same class.
+Run `bash Install-Shortcut.sh` from the refreshed extracted folder, fully exit
+Athan Time, then reopen from the application menu. If the old generic icon is
+pinned, unpin it and pin the new entry. This keeps registration opt-in, needs no
+sudo and retains existing Exec escaping. No application runtime, Windows/macOS
+icon, artwork, dependency or native Wayland-backend change is introduced.
+
+Tests cover both Linux archive icons, generated/native desktop metadata, repeated
+registration with isolated XDG paths containing spaces/metacharacters, copied icon
+bytes and missing-icon failure before creating a desktop entry. Native Ubuntu
+GNOME/XWayland grouping, icon cache refresh and pinning remain matching-host checks.
+
+Windows x64 / SDK 11.0.100 validation on 2026-11-16: Debug and Release builds
+passed with zero warnings/errors; both suites passed 525 tests with one symbolic-link
+permission skip (526 total). Linux x64/ARM64 archives and the source ZIP are refreshed
+in `artifacts/packages`; inspect their hashes and actual checks in BUILD-INFO.json.
+Windows/macOS binary packages remain the already verified current refresh, since
+this fix changes Linux packaging/registration only. Native Ubuntu rendering is not
+verified from Windows. Logs are `artifacts/package-refresh-20261116/icon-*.log`.
+
+## All-package refresh (2026-11-16)
+
+The requested refresh retains **1.0.2-beta.13** and writes the current Windows
+Setup, five self-contained portable ZIPs and reviewed source ZIP to
+`artifacts/packages/`, with SHA256SUMS.txt, BUILD-INFO.json and release notes.
+It includes setup's Uninstall choice, explicit same-user/same-executable graceful
+shutdown and current cleanup helpers/diagnostics. Earlier files under
+`artifacts/releases/v1.0.2-beta.13/` remain historical snapshots; use the refreshed
+packages folder for the latest builds. The older prepared Git repository is also
+a snapshot; the new source ZIP contains current reviewed working files without
+Git metadata. No version bump, commit, tag or GitHub upload is included.
+
+Rebuilds use the existing InstallerBuilder and current verified Windows setup,
+with fresh portable staging. Check all five archives for runtime/native CPU,
+catalog/audio/launcher hashes, the shutdown marker, Unix executable metadata and
+current app-DLL parity; compare the Windows setup's complete common payload with
+the portable ZIP. Source files and executable modes must match the reviewed
+working inventory. Build/test evidence and actual package hashes are recorded in
+BUILD-INFO.json; earlier test results must retain their recorded provenance.
+Evidence scripts/logs live under `artifacts/package-refresh-20261116/`.
+
+Verification on 2026-11-16 passed archive integrity, self-contained .NET 11.0.0,
+native CPU checks, catalog/audio/capability hashes and desktop/cleanup helper modes
+for all five portable ZIPs. Windows setup matched all 282 common payload files;
+the portable-only settings-removal command is intentionally separate. The source
+ZIP matches 158 reviewed working files with Unix creator/executable metadata;
+144 local documentation links/anchors passed. All seven historical release-file
+checksums and 156 older prepared-repository source files remained unchanged.
+The existing same-source Debug/Release evidence is 524 passing tests plus one
+link-permission skip per configuration; suites were not rerun for this package-only
+refresh. Actual filenames, sizes, hashes and limits are in the refreshed BUILD-INFO.json.
+
+This Windows-host refresh cannot create native DEB/DMG installers. macOS 15+ and
+Linux desktop execution still need matching hosts. Windows output remains unsigned,
+macOS unsigned/not notarized; the prior Sandbox attempt was blocked before install
+by Application Control. No host install/uninstall or security-policy change occurs.
+Recording redistribution rights retain the limitations in THIRD-PARTY-NOTICES.md.
+
+## Windows maintenance and storage review (2026-11-16)
+
+Windows setup now offers Install/update or Uninstall for the selected registered
+scope. `Setup.exe /Uninstall` uses the detected scope; `/CurrentUser` or `/AllUsers`
+selects it explicitly. Removal runs that registered uninstaller from a temporary
+copy and waits for its result. Maintenance runs in the original user process before any setup elevation, so it cannot reach the post-install launch path. A missing uninstaller requires repair first.
+Existing older uninstallers keep their old behavior until repaired.
+
+The current app advertises `Data/desktop-control.json` with shutdown protocol 1.
+Setup/uninstall invokes its pre-host `--shutdown` as the desktop user, sends a
+same-user pipe command after checking that the running executable belongs to the
+selected installation and waits up to 20 seconds for the Release lease to end.
+Exit runs on the UI thread and bypasses tray hiding/confirmation, while preserving
+normal host/audio disposal. No force-kill or new resident listener is added.
+Restart Manager still targets only the selected executable, followed by bounded
+write-access polling and Retry/Cancel. The marker avoids starting older apps with
+an unsupported argument. Other users' processes retain the native fallback;
+Debug instances must be closed manually. The shared command is portable, while
+macOS/Linux installers retain their documented native quit workflows.
+
+Storage review: preferences currently resolve through .NET `ApplicationData` to
+`%APPDATA%\AthanTime\settings.json` on Windows, individually for each OS user.
+[Microsoft's special-folder documentation](https://learn.microsoft.com/en-us/dotnet/api/system.environment.specialfolder)
+defines this as a roaming-user application-data location. It is appropriate for
+user preferences; All users installation does not make the profile shared.
+Current logs and `window-position.json` also use that legacy folder.
+[Microsoft recommends LocalAppData for machine-specific data](https://learn.microsoft.com/en-us/windows/apps/develop/windows-app-restore#machine-specific-app-data),
+so separating those device files is a future migration improvement. This task
+does not move/delete profiles or change macOS/Linux storage. Uninstall retains
+settings by default; only checked Remove my settings requests owned-file cleanup.
+
+## Uninstall shutdown and cleanup diagnostics (2026-11-16)
+
+The beta.13 screenshot showed the generic cleanup-failure popup during All users
+uninstall with the app running. Source review confirmed uninstall never called
+Restart Manager; it only tested executable write access. A busy per-user lease
+could therefore reject the cleanup process. The old popup did not distinguish
+that from an elevated launch failure or a filesystem error, so the screenshot
+alone cannot establish the exact child/native error.
+
+Uninstall now calls the same selected-executable graceful-shutdown macro as setup,
+after scope/elevation at startup, again before removal, and on cleanup Retry.
+It never force-kills. The existing file-access fallback remains. Cleanup retries
+only busy exit code 1 (at most 20 attempts with 250-ms pauses) for delayed mutex
+release. All-users cleanup still uses the desktop-user token/environment; it
+never falls back to deleting an administrator profile. Native launch diagnostics
+capture API stage and Win32 error immediately; timeout/child exit are separate.
+Optional cleanup failure offers Retry, Ignore to keep remaining settings and finish uninstall, or Abort to retain the application. Retry is the default button.
+
+Cleanup exit codes are now: 0 success, 1 active instance, 2 invalid combined
+arguments, 3 unavailable/relative profile path, 4 I/O/startup-registration failure,
+5 linked profile/log path refused before deletion, 6 access denied. The shared
+C# cleanup result is portable; Windows/macOS/Linux confirmation helpers report
+the returned code. Other users and custom recordings remain protected. Native
+macOS/Linux removal retains its explicit quit/helper workflow.
+
+The Sandbox-only [running-app uninstall procedure](../packaging/windows/Test-UninstallRunningApp.ps1)
+installs All users in a disposable guest, starts the app minimized, launches
+uninstall, verifies graceful exit before confirming, checks the real optional
+checkbox and verifies owned-file deletion/recording preservation. Alternate
+administrator credentials and other real user sessions remain separate checks.
+The script refuses the host before mutation. Never run OS installers on the host.
+
+Validation on 2026-11-16: Windows x64 / SDK 11.0.100 Debug and Release builds
+completed with zero warnings/errors; each passed 524 tests, with one explicit
+symbolic-link permission skip (525 total). NSIS 3.13 compiled the real local
+validation setup (77,633,964 bytes). Archive integrity and current Windows app-DLL
+hash parity passed; bundled runtime/native/catalog files are present. Setup SHA-256:
+`FE4E30A161931D8A6AD5B4C7635783A473163DA04DF120A9021D52191E0F2F6B`.
+The dedicated procedure refused host execution before mutation. An earlier Windows
+Sandbox attempt (Windows 10.0.26100.0) reached the elevated/fresh-profile prerequisites,
+but Application Control blocked setup execution before installation. No native
+uninstall, checkbox cleanup or app shutdown was therefore exercised in that guest.
+Security policy was not changed; the guest shut down after recording the failure.
+Native behavior remains unverified, including alternate-admin desktop-token access.
+Evidence is under `artifacts/uninstall-fix-20261116/`, including the Sandbox result
+and validation build checksum; no installer was executed against the host profile.
+
+A follow-up report still showed the original generic popup. Read-only host checks
+confirmed All users registration and Scope=AllUsers. The installed app DLL hash
+exactly matched the original beta.13 portable package
+(`82031F3DAAAA104D6DC7F3883F1AC720B423A1F8D3EDE02FD2054ADBE9E27124`),
+proving the repair had not replaced that application payload. Recovery with the
+installed uninstaller is to fully exit Athan, run Uninstall.exe as administrator
+and leave Remove my settings unchecked. The repaired version additionally lets
+the user explicitly keep remaining settings and continue if optional cleanup fails.
+The file-access guard still protects files that are in use or unwritable.
+
+The source fix is newer than the prepared beta.13 release assets. A local
+validation setup is built under `artifacts/uninstall-fix-20261116/Validation/`;
+versioned release files/checksums remain untouched. Install the repaired setup
+over the existing registered copy before testing uninstall: an already installed
+Uninstall.exe does not change when repository source changes. No new release
+version, commit, tag or GitHub upload is created by this fix.
+
+## Beta13 preparation (2026-11-16)
+
+The shared version is **1.0.2-beta.13**. This explicitly requested local preparation
+includes OS-user regional defaults and first-run city review, optional current-user
+settings cleanup on Windows uninstall and portable/Unix helpers, plus the prior
+About, audio, reminder-test, clock-change and desktop-launch improvements.
+Keep Windows x64, Linux x64/ARM64 and macOS Intel/Apple Silicon self-contained.
+Native DEB/DMG still require matching hosts; this Windows preparation creates
+Windows Setup, five portable ZIPs and a source ZIP with checksums/build information.
+
+Current source/clean repository/source ZIP must match by hash. Portable cleanup
+helpers are checked against their canonical source, with Unix modes/creator bits.
+The Windows portable-only Remove-My-Settings.cmd is excluded from setup payload
+parity: setup provides the uninstall checkbox instead. All other 281 payload files
+must match. Existing release folders are historical snapshots, never overwritten.
+No commit, tag, remote change or GitHub upload is included. Public copying uses
+the reviewed clean-history repository or source ZIP, preserving original local history.
+
+Windows x64 / SDK 11.0.100 Debug and Release builds each completed with zero
+warnings/errors. Each suite passed 515 tests and explicitly skipped one native
+symbolic-link fixture for missing permissions. The prepared history has 191 blobs,
+183 text blobs scanned, approved public author/committer identity and only the
+intended main/beta.7 refs; no checked sensitive-path/token/oversized-blob findings.
+This is a scoped pattern/history review, not an exhaustive privacy guarantee.
+
+Preparation evidence is under `artifacts/beta13-preparation/`; downloads are under
+`artifacts/releases/v1.0.2-beta.13/`. Native uninstall/UAC, Finder/Linux desktop,
+audio/tray/login/browser checks remain pending. Windows is unsigned; macOS is
+unsigned/not notarized. Recording redistribution rights remain unverified and
+must be reviewed before public distribution. See the
+[copy-ready notes](releases/v1.0.2-beta.13.md) and [release checklist](RELEASE-CHECKLIST.md).
+
+## First-run regional defaults and optional settings removal (2026-11-15)
+
+On the first application launch for each OS user, shared C# code reads UI culture,
+regional 12/24-hour format, region and the TZDB-mapped system zone. The offline
+catalog suggests a populated city in that zone/aliases, preferring the region and
+then population/stable ID. This is a suggestion, never exact geolocation. Review
+or change the displayed city before confirming; automatic prayer reminders wait.
+UTC/unknown zones without a city keep the fallback for explicit review. Existing
+profiles, recovery, imports and load/schema failures do not rerun detection.
+The actual clock/calendar and prayer conversions retain the existing injected
+clock/TZDB behavior; OS regional preferences do not override calculation rules.
+
+Windows interactive uninstall adds an unchecked Remove my settings choice. It
+runs the installed app with `--remove-user-settings` as the desktop user (using
+the same token/environment handoff as setup finish), waits for success and aborts
+before payload removal on failure. Silent uninstall keeps settings. No other
+profiles are enumerated or deleted. The cleanup mode acquires the per-user lease
+without starting host/UI/media/log sinks or activating a running app. Exit code
+0 means success, 1 busy, 2 invalid combined arguments, 3 profile path unavailable,
+4 I/O/startup failure, 5 linked path refused and 6 access denied (see the fix above).
+It disables current-user login startup and removes known JSON preferences,
+backups/temp files, window placement and `Logs/athan-*.log`. Unknown files and
+custom recordings remain; empty directories alone are removed non-recursively.
+Linked profile/log paths are refused. A failure can leave partial cleanup: check
+access, close all app/Debug processes and retry before uninstalling.
+
+Portable Windows includes `Remove-My-Settings.cmd`. On macOS, use
+`Remove-My-Settings.command` beside the app/DMG before deleting the app; it also
+finds the Applications copy. On Linux portable, run `bash Remove-My-Settings.sh`;
+DEB installs it at `/usr/share/athan-time/Remove-My-Settings.sh`. Unix helpers ask
+the user to type REMOVE, reject root/sudo and call the installed app, then native
+app/package removal remains separate. Finder and Linux package managers do not
+provide the Windows checkbox, and DEB hooks never sweep user homes. Each OS user
+can choose cleanup separately while the executable is still installed.
+
+Verification on 2026-11-16: Windows x64 / SDK 11.0.100 Debug and Release builds
+both completed with zero warnings/errors. In each configuration, 515 tests passed
+and one symbolic-link fixture was explicitly skipped because this account cannot
+create the link. Suites include real-catalog regional/alias checks, profile
+recovery/preservation, fake-clock reminder gating, all-eight-language/both-theme
+city review, known-file cleanup/failure cases, all-five portable layouts and
+simulated Unix recipe/consent checks through Git Bash. NSIS 3.13 compiled an
+isolated fake-payload recipe; its executable was removed and never installed.
+137 local documentation links/anchors, Git exclusions, whitespace, PowerShell
+syntax and new source/script line endings were checked. No host profile, login
+entry or native installer was exercised. Native matching-OS uninstall/UAC and
+Mac/Linux desktop validation remain pending, including linked-path checks where
+native permissions are available.
+
+The initial source change did not create release assets. Beta.12 downloads record
+the earlier snapshot; the requested beta.13 preparation above refreshes source and packages. Native UAC/desktop-uninstall,
+Finder and Linux package-manager testing requires matching disposable hosts.
+
+## Beta12 preparation (2026-11-15)
+
+Source and local package preparation use **1.0.2-beta.12**. About now summarizes
+features in all eight languages and provides underlined project/download URLs
+through the existing browser/error callback. Its owned window lives with the
+other secondary windows in AppWindows.cs and shares their card/button theme.
+Language/theme updates remain live, URL text is LTR and semantic versions are
+shown in a separate LTR block for RTL reading. Text decorations are owned by each window rather
+than shared across UI dispatchers.
+
+This preparation also includes the supplied Athan/Takbeer audio, retired bundled
+Alhamdulillah filtering, three reminder Test actions, Sidon PC-clock countdown
+notifications and Unix desktop ZIP/launcher improvements described below.
+Windows setup now requests graceful exit before replacement and launches the app visibly after successful interactive setup. GitHub version polling remains proposed.
+See [current release notes](releases/v1.0.2-beta.15.md).
+
+Windows x64 / SDK 11.0.100 final Debug and Release builds each had zero warnings
+or errors; all 491 tests passed in each, none skipped. Setup lifecycle regression
+coverage now includes native/programmatic close reasons and a visible launch
+override without preference writes. NSIS 3.13 compiled an isolated recipe fixture;
+no installer was executed on the host. The initial Release
+review exposed a shared TextDecoration dispatcher error; per-window decorations
+fixed it. Screenshots confirmed that inline RTL version isolation still rendered
+poorly, so About now uses a separate LTR version block. Final English/Arabic
+About captures were reviewed after both full suites passed. No new dependency,
+background work or timer was added.
+
+Final Debug/Release checks, package hashes, source inventory and native headers
+are recorded with the local preparation under `artifacts/beta12-preparation/`
+and downloads under `artifacts/releases/v1.0.2-beta.12/`. Earlier release files
+are historical evidence. Native installation/update/uninstall, actual browser,
+audio/tray/login and macOS/Linux desktop checks remain matching-host work.
+Windows output is unsigned and macOS is unsigned/not notarized. Recording
+redistribution provenance remains unverified as documented in third-party notices.
+Preparation creates local reviewable files; GitHub publication is a separate action.
+
+## Public links and update options (2026-11-15)
+
+The approved [project](https://github.com/Cophla/AthanTime.Net) and
+[release listing](https://github.com/Cophla/AthanTime.Net/releases) appear in
+General settings, About, support drafts, Windows installed-app URL metadata,
+Linux package Homepage and portable startup help. General's localized buttons
+open the OS browser on user action. A failed browser launch shows the URL for
+copying through the shared information dialog. This source change adds links.
+
+Windows setup registers only the selected installation's executable with Windows
+[Restart Manager](https://learn.microsoft.com/en-us/windows/win32/api/restartmanager/nf-restartmanager-rmshutdown) and requests graceful shutdown (no forced termination) when Install
+is committed. The app accepts native Windows update/session shutdown without
+hiding to tray or asking for exit confirmation; desktop/host disposal releases
+media and logging normally. Setup polls write access for up to ten seconds before
+Retry/Cancel (silent failure code 2). Old versions that refuse native shutdown,
+other users' copies or denied access can still require manual Exit. Browsing or
+cancelling the destination page does not close the app. Uninstall now requests the same graceful exit at startup and before removal,
+with the manual-exit guard retained as fallback.
+
+Successful interactive setup starts the installed app with `--show-window`,
+overriding minimized startup once without changing saved settings or login startup.
+Silent `/S` and internal `/NoStart` skip launch. An unelevated parent launches after
+a successful elevated child, rereading its final registered destination; directly elevated setup uses the desktop shell user's
+token and environment, never the administrator's profile. Without a usable desktop
+token or on launch failure, setup leaves the installation intact and asks the user
+to open the Start-menu shortcut. No new dependency, service, timer or online access
+is added. macOS DMG/portable and Linux DEB/portable keep their native workflows:
+quit before replacing files and launch from Finder/the desktop shortcut. They do
+not run this Windows-specific integration.
+
+Matching-OS Sandbox checks must cover tray-only update, audible playback teardown,
+profile/login preservation, interactive completion, silent no-launch, both scopes,
+UAC cancellation/alternate credentials and legacy manual fallback. Compilation and
+headless tests do not certify native Restart Manager or token launch behavior.
+
+
+An optional in-app version checker is a proposed feature, with these possible
+user-visible steps: opt in, check on startup/at most daily, compare the installed
+version with published GitHub versions, show an update notice, and open the
+appropriate download. Calculation/reminders continue offline when checks fail.
+The checker needs public release-list access, bounded requests and beta-aware
+version comparison, including beta11/beta.11 spelling compatibility. GitHub's
+[latest-release endpoint](https://docs.github.com/en/rest/releases/releases#get-the-latest-release)
+excludes prereleases, so a beta checker should inspect the release list instead.
+GitHub's [Watch notification settings](https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications)
+also let users subscribe specifically to releases through GitHub/email.
+In-app polling remains proposed; setup lifecycle behavior is implemented above.
+
+## Reminder test buttons (2026-11-15)
+
+Source now includes a Test action on each Audio & Adhkar page, localized in all
+eight languages and using the existing shared button/popup styles. Windows x64
+SDK 11.0.100 builds passed with zero warnings/errors and all 483 tests passed in
+each of Debug and Release, none skipped. Checks cover button routing/rendering
+in both themes, preview expiry while disabled/paused, selection/default fallback,
+manual dismissal/rotation and unchanged settings/history. The first UI fixture
+used a parameterless window without its injected view model; the fixture was
+corrected and both complete suites passed. Evidence is under ignored
+artifacts/reminder-tests-20261115/. Native audio and desktop popup interaction
+on Windows/macOS/Linux remain separate checks. No release was created.
+
+## Desktop launchers (2026-11-15)
+
+The source update prepares easier portable startup for the next explicitly
+requested release. Existing beta.11 downloads remain the November 14 artifacts.
+Inspection confirmed that both Linux CPUs and both Mac CPUs include .NET 11.0.0
+and CoreLib. Their ZIP apphost entries had no Unix executable modes. A separate
+.NET installation is unnecessary when starting the matching bundled executable.
+
+`PortablePackage` records Unix as the archive creator and mode 0755 for executables/launchers on any
+build host. Windows keeps the flat layout. Linux adds `Launch-Athan-Time.sh`,
+`Install-Shortcut.sh`, `Install-Requirements.sh` and `START-HERE.txt`.
+The launcher uses nohup with detached streams. Native startup errors go to
+XDG_STATE_HOME/AthanTime/launcher.log (default ~/.local/state). The optional
+shortcut uses XDG_DATA_HOME/applications and Terminal=false, escaping its Exec
+path. Moving the folder requires reinstalling the shortcut. The opt-in apt helper
+installs Ubuntu/Debian OS libraries with available ICU/OpenSSL/ALSA package names.
+It requests sudo when needed. Other distributions require corresponding packages.
+The native DEB already declares dependencies. Tests use fake package commands.
+
+Both Mac CPUs use `Athan Time.app/Contents/MacOS` for the self-contained payload,
+reusing the native Info.plist template and macOS 15 baseline. Extract with Archive
+Utility, drag the app to Applications and open it. The optional .command launcher
+repairs the apphost permission and calls Launch Services through `open`, so
+Terminal can close. Keep the bundle intact. Signing/notarization, Gatekeeper and
+native Intel/Apple Silicon Finder launches require matching-host checks.
+
+Windows x64 / SDK 11.0.100 Debug and Release builds each completed with zero
+warnings/errors and all 477 tests passed, none skipped. Build commands used
+-p:UsedAvaloniaProducts= for sandbox-compatible telemetry handling. The first
+Debug run had two Git Bash fixture path-conversion failures; those were corrected
+and the full Debug and Release runs passed. Logs and existing-runtime inspection
+are under ignored artifacts/desktop-usability-20261115/.
+
+The application version is unchanged and no release was created. Fixtures verify
+archive layouts, payload bytes, executable modes, spaces/metacharacters, detached
+lifetime and fake library setup. Native Linux desktop checks remain pending.
+Real-calculator navigation tests pass across the 2026 spring/autumn transitions
+in Asia/Beirut and Europe/London, including cache revisits and Today. A Sidon PC-clock jump from November 15 to June 15 exposed missing property-specific
+Countdown notifications in the date-refresh branch. The clock, countdown, next
+prayer and progress now use the existing change-aware setters on every refresh
+path. Ordinary ticks no longer duplicate notifications. The regression checks
+both named events and rendered next-time/countdown text; astronomy/TZDB rules
+are unchanged. Live Mac system-clock changes remain a native verification limit.
+
+## Interactive monitor dragging (2026-11-14)
+
+The current release is **1.0.2-beta.11**. A user recording of beta.10 revealed
+that settled programmatic bounds did not cover an active native title-bar drag.
+The beta.10 fitter could run during movement and select a work area from the
+top-left point while the window's DPI belonged to another monitor.
+
+Windows now uses guarded Avalonia Win32 hook callbacks to observe
+`WM_ENTERSIZEMOVE`/`WM_EXITSIZEMOVE`. They remain unhandled so the OS retains its
+native move/resize and DPI behavior. Fitting and intermediate coordinate capture
+are suppressed during that loop; exit queues the existing fit. Hide/close clear
+the flag, and close removes the hook. Shared fitting uses `ScreenFromWindow`
+and its single work area, with existing offscreen recovery. Ordinary position
+events only capture state. No new dependency, timer, graphics-mode workaround,
+profile field or installation identity is introduced. Linux/macOS keep Avalonia
+desktop geometry; their native interactive timing remains unverified.
+
+Windows x64 build 10.0.26300.0 / SDK 11.0.100 built all six projects in Debug and
+Release with zero warnings/errors. **461 tests passed in each**, none skipped.
+The two added headless cases invoke the actual hook callback and verify deferred
+fitting, untouched message handling, no intermediate save and hide cancellation.
+
+An isolated production MainWindow with fake clock/settings/audio/login and a
+temporary position file was inspected through computer use. The native probe
+recorded two move/resize entry/exit pairs in opposite directions between the
+existing 100% and 150% displays, zero fitting changes while moving, and frames
+inside the destination work areas after release. Refreshed screenshots at both
+scales showed the application header and Today/Settings tabs intact. Input was
+detected during reverse verification and state was refreshed before continuing;
+this is live assisted verification, not a fully unattended CI drag test.
+Raw native metrics, review boundaries and build/test records are retained under
+ignored `artifacts/cleanup-beta9/monitor-drag-20261114/`.
+
+This check covers native drag gating and settled rendered results. Continuous
+cross-monitor desktop recording artifacts/GPU behavior were not isolated, so it
+does not establish that every graphics/capture configuration is fixed. Native
+macOS/Linux drag tests, real installation/update/uninstall, audio, tray-icon
+interaction and login checks remain pending. Windows output is unsigned.
+Self-contained beta.11 downloads keep all five RIDs and the friendly filenames;
+see [current release notes](releases/v1.0.2-beta.15.md). Earlier release assets stay unchanged.
+
+## Window fitting (2026-11-14)
+
+The size-fitting release was **1.0.2-beta.10**. The existing .NET 11, five-RID,
+self-contained deployment and friendly download names remain. Install/profile,
+single-instance and login identities are unchanged; `window-position.json` still
+stores only X/Y coordinates. See [current release notes](releases/v1.0.2-beta.15.md).
+
+The main window now fits both its client size and desktop position to the work
+area, reserving native title-bar/border space. It uses Avalonia DesktopScaling
+rather than rendering density, preserving macOS desktop-coordinate behavior.
+Opening, tray restoration, monitor changes, normal-state return and settled
+native DPI/resize callbacks use the same bounded dispatcher path. Hidden and
+non-normal windows are skipped. Preferred 980×600 minimums are lowered only when
+the work area is smaller and restored when space returns; smaller displays can
+fall below the readable UI baseline. No size preference or per-drag save is added.
+
+Windows x64 build 10.0.26300.0 with SDK 11.0.100 built all six projects without
+warnings/errors. **459 tests passed in Debug and in the final Release run**, none
+skipped. The first Release attempt encountered two temporary-file errors and a
+Microsoft.Testing.Platform duplicate-handshake failure; a separate rerun passed.
+Both logs are retained under ignored `artifacts/cleanup-beta9/window-fit-20261114/`.
+Geometry regressions cover 100–200% scaling, negative coordinates, native frame
+decorations, removed monitors, unusually small work areas, invalid inputs and
+unchanged valid geometry. A headless real-window test covers oversize opening,
+resize, repeated tray restoration and return from maximized state; prior
+position/save-failure/start-minimized/activation checks also passed.
+
+An isolated native Windows probe used the production MainWindow/styles with fake
+clock/settings/audio/login and a temporary position file. Nine observations
+passed across the two existing 1920×1080 displays at 100% and 150% scaling,
+including repeated hide/ShowFromTray and maximize/normal cycles. At 150%, client
+height fitted to 634 logical pixels and the outer 1792×1007 frame stayed inside
+the 1920×1008 work area. The primary display retained the normal 1180×800 client
+size. The running application, real profile, audio, login entries and display
+configuration were not changed. This validates window geometry, not real tray
+icon interaction or a complete installation/audio smoke test. macOS/Linux native
+geometry and DEB/DMG checks remain unverified; their window-manager restrictions
+still apply. New release payload evidence/checksums belong with beta.10, while
+beta.9 and older downloads/evidence remain historical and unchanged.
+
+## Release cleanup (2026-11-11)
+
+The cleanup release was **1.0.2-beta.9**, using the same .NET 11 runtime and five
+architectures as beta.8. Application downloads are self-contained. The shared
+publish guard now rejects framework-dependent output, missing CoreLib/runtime
+configuration/coreclr/hostfxr, unsupported RIDs and unvalidated trimmed,
+single-file or Native AOT modes. Existing offline catalog, audio and SQLite
+native checks remain. This does not eliminate normal OS desktop dependencies.
+
+Download names use ASCII letters, digits, dots and hyphens, suitable for GitHub
+Release assets. Build commands still accept the familiar runtime identifiers:
+
+| Runtime input | Portable ZIP suffix | Native package suffix |
+| --- | --- | --- |
+| `win-x64` | `Windows-x64-Portable.zip` | `Windows-x64-Setup.exe` |
+| `linux-x64` | `Linux-x64-Portable.zip` | `Linux-x64.deb` |
+| `linux-arm64` | `Linux-arm64-Portable.zip` | `Linux-arm64.deb` |
+| `osx-x64` | `macOS-Intel-x64-Portable.zip` | `macOS-Intel-x64.dmg` |
+| `osx-arm64` | `macOS-AppleSilicon-arm64-Portable.zip` | `macOS-AppleSilicon-arm64.dmg` |
+
+Every suffix follows `AthanTime-1.0.2-beta.9-`. The reviewed source download is
+`AthanTime-1.0.2-beta.9-Source.zip`; it contains no bundled application runtime
+and needs the .NET 11 SDK to build. Download renaming does not alter installation,
+update/uninstall, login, profile or single-instance identities. Windows smoke
+procedures recognize the new Setup name. Debian control architecture remains
+`amd64`/`arm64`; only its download filename spells out Linux and x64/arm64.
+
+`AppWindows.cs` groups the shared secondary-window base and both popup types.
+Dense seasonal/text settings setters are expanded without changing callbacks,
+validation or saves. The redundant `packaging/build-portable.ps1` wrapper and
+its wrapper-only tests are removed; use the shared builder's portable command
+below. Publish-guard fixtures exercise each actual runtime target in isolated
+temporary folders, including missing-runtime failures. Naming tests cover all
+five targets from all three build hosts; fake native recipes check actual output
+names. Optional public CI now runs both test configurations and builds native
+and portable packages, retaining human-readable artifact names.
+
+Generated build/test outputs, extracted installer payloads and redundant runtime
+download chunks were removed before clean verification. Source catalogs, media,
+licenses, profiles, original Git history, the prepared clean repository and dated
+release/evidence records remain. Current checksums/source provenance and actual
+verification results are in `artifacts/releases/v1.0.2-beta.9/BUILD-INFO.json` and
+ignored `artifacts/cleanup-beta9/`. Copy-ready [current release notes](releases/v1.0.2-beta.15.md)
+describe the available downloads. Windows remains unsigned; native Linux/macOS
+desktop and DEB/DMG checks still require matching hosts. Native installers are
+never executed against the developer's real profile during this review.
+
+On November 11, Windows x64 with SDK 11.0.100 built all six projects in Debug
+and Release with zero warnings/errors. **443 tests passed in each**, none skipped.
+Read-only IDE0005/IDE0051/IDE0052 analysis found no candidates. All 120 local
+documentation links/anchors and the Windows recipe/smoke-script syntax checks
+passed. Package-specific runtime, architecture, integrity and payload comparisons
+are recorded separately in the release build information; automated checks do
+not establish native desktop operation on any target.
+
+## .NET 11 upgrade (2026-11-10)
+
+The framework-upgrade release was **1.0.2-beta.8**, targeting `net11.0` throughout the app,
+tests and build tools. The solution now includes LocationDataBuilder so local
+solution builds and the existing five-runner CI cover all six projects. The
+shared framework/version remain in `Directory.Build.props`; `global.json` still
+selects Microsoft.Testing.Platform without pinning a developer SDK version.
+
+Microsoft released [.NET 11.0.0 / SDK 11.0.100](https://dotnet.microsoft.com/en-us/download/dotnet/11.0)
+on November 10. The app and catalog builder use Microsoft.Data.Sqlite 11.0.0;
+Microsoft.Extensions.Hosting is 11.0.0. The restored SQLite bundle is
+SQLitePCLRaw 3.0.5 with the public-domain SQLite 3.53.4 native package. It has
+`e_sqlite3` assets for all five RIDs; no system SQLite or paid native build
+service is introduced. Third-party notices reflect the resolved packages.
+Avalonia 12.1.3, SoundFlow/NVorbis and the other existing managed dependencies
+remain. Serilog's latest stable hosting/configuration integrations are still
+10.0.0/10.0.1; there is no stable 11.x release in the checked NuGet indexes.
+Validate their existing real-host/file-logging tests against the new Microsoft
+hosting stack rather than introducing preview packages or a second logger.
+
+The architecture matrix stays `win-x64`, `linux-x64`, `linux-arm64`, `osx-x64`
+and `osx-arm64`. [.NET 11's supported OS list](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.md)
+raises the supported macOS baseline to **15**, on both Intel and Apple Silicon;
+the bundle's `LSMinimumSystemVersion` and recipe regression assertions now agree.
+Supported Linux baselines include Ubuntu 22.04/24.04/26.04 and Debian 13 with the
+declared desktop dependencies. Windows 10 remains edition/build-specific and
+best effort, never blanket support. No architecture was removed.
+
+The existing self-contained recipes embed .NET 11, preserve installation/profile
+identities and keep the optional login preference. All beta.7 artifacts and
+their dated evidence remain historical. Beta.8 packages, runtime/native-header
+inspection, checksums and source/build evidence are recorded under
+`artifacts/releases/v1.0.2-beta.8/` and ignored `artifacts/net11-20261110/`.
+Rebuild native DEB/DMG on matching hosts; Windows cross-published ZIPs are not
+native installation tests. Native audio/tray/login/install/update/uninstall,
+macOS signing/notarization and trusted Windows signing remain separate,
+unverified release checks. Copy-ready [current release notes](releases/v1.0.2-beta.15.md)
+describe the runtime and OS baseline changes.
+
+Windows validation started November 10 with SDK 11.0.100/runtime 11.0.0:
+all six projects built in Debug and Release with zero warnings/errors, and
+**431 tests passed in each**, none skipped. Existing catalog/translation,
+streaming-decoder, settings, logging and desktop-lifecycle regressions ran on
+the new runtime. The added macOS minimum assertion passed in the fake-recipe
+tests; generated icon checks, all five portable-plan checks and 110 local
+documentation links/anchors passed. Packaging/download verification continued
+on November 11; per-artifact timestamps, source snapshot and hashes belong in
+the accompanying build information. These checks do not certify native desktop
+operation on Linux/macOS or resolve Windows signing.
+
 ## Support mailbox beta.7 (2026-11-08)
 
-The current release is **1.0.2-beta.7**. Shipped `Application:SupportEmail` and
+The beta.7 release was **1.0.2-beta.7**. Shipped `Application:SupportEmail` and
 the missing-setting fallback now use the approved public project mailbox
 `athantimedotnet@gmail.com`. Suggestions, complaints and log-sharing actions
 still create localized drafts in the user's own mail application. No SMTP,
@@ -57,7 +768,7 @@ setup, five portable ZIPs, source ZIP, `SHA256SUMS.txt`, `BUILD-INFO.json` and
 `RELEASE-INFORMATION.md`. Per-artifact sizes/checksums, source revision, actual
 test results and native limitations are recorded alongside the binaries rather
 than embedding a source commit's own checksum into its documentation. Copy-ready
-GitHub fields and description are in the [beta.7 release notes](releases/v1.0.2-beta.7.md).
+GitHub fields and description are in the [current release notes](releases/v1.0.2-beta.15.md).
 Preserve the previous beta's assets; publish this as a new prerelease.
 
 Build/inspect the Windows installer here and cross-publish portable ZIPs for
@@ -817,7 +1528,7 @@ disable Release enforcement. This creates no separate shipped Debug edition.
 
 Concurrent Debug instances share the existing user settings/logs and run separate
 reminder/audio schedules; writes and dispatch are not coordinated. There is no
-automatic profile isolation or new persisted option. See [development usage](../README.md#run-and-verify).
+automatic profile isolation or new persisted option. See [development behavior](REQUIREMENTS.md#required-behavior).
 
 On Windows build 10.0.26300 x64 with SDK 10.0.403, both builds passed with zero
 warnings/errors and all **340 tests passed in each configuration**, with none
@@ -1122,9 +1833,9 @@ Use the launcher at the repository root for the computer building the installer:
 
 | OS | Launcher | Native output | Prerequisites |
 | --- | --- | --- | --- |
-| Windows | Double-click [Create-Installers.cmd](../Create-Installers.cmd) | `*-win-x64-setup.exe` | .NET 10 SDK; NSIS is detected or downloaded automatically |
-| macOS | Double-click [Create-Installers.command](../Create-Installers.command) | `*-osx-x64.dmg` or `*-osx-arm64.dmg` | .NET 10 SDK and built-in `hdiutil` |
-| Debian/Ubuntu Linux | Run [Create-Installers.sh](../Create-Installers.sh) in a terminal | `*-amd64.deb` or `*-arm64.deb` | .NET 10 SDK, Bash and `dpkg-deb` |
+| Windows | Double-click [Create-Installers.cmd](../Create-Installers.cmd) | `*-win-x64-setup.exe` | .NET 11 SDK; NSIS is detected or downloaded automatically |
+| macOS | Double-click [Create-Installers.command](../Create-Installers.command) | `*-osx-x64.dmg` or `*-osx-arm64.dmg` | .NET 11 SDK and built-in `hdiutil` |
+| Debian/Ubuntu Linux | Run [Create-Installers.sh](../Create-Installers.sh) in a terminal | `*-amd64.deb` or `*-arm64.deb` | .NET 11 SDK, Bash and `dpkg-deb` |
 
 All launchers use the existing InstallerBuilder, choose the current host's default
 architecture, and write to `artifacts/packages`. The version comes from
@@ -1176,9 +1887,9 @@ windows/tray/executable use ICO, other desktop windows/tray use the compact PNG,
 and Linux packaging uses the large PNG. [IconBuilder](../AthanTime.Net/Assets/ICON.md) regenerates them
 on Windows, macOS or Linux before packaging; it is not an application dependency.
 
-The .NET 10 project `tools/InstallerBuilder/` is the entry point for all formats.
+The .NET 11 project `tools/InstallerBuilder/` is the entry point for all formats.
 It has no packaging NuGet dependencies. Run it from this repository with the
-.NET 10 SDK. By default it creates the native package for the current OS:
+.NET 11 SDK. By default it creates the native package for the current OS:
 
 ```text
 dotnet run --project tools/InstallerBuilder -c Release
@@ -1210,14 +1921,6 @@ dotnet run --project tools/InstallerBuilder -c Release -- --format portable --ri
 This includes the .NET runtime but is not a native installer. ZIP extraction
 may lose Unix executable permissions; use the native package for a polished
 Linux/macOS installation. Publishing a different RID is not a runtime test.
-
-The older PowerShell recipe remains available:
-
-From PowerShell:
-
-```powershell
-./packaging/build-portable.ps1 -Runtime win-x64 -Version 1.0.1
-```
 
 Supported RIDs are `win-x64`, `linux-x64`, `linux-arm64`, `osx-x64`, and
 `osx-arm64`.
@@ -1297,13 +2000,13 @@ application-data `AthanTime` folder; installers do not import or reset them.
 
 | OS | Fresh install or update |
 | --- | --- |
-| Windows x64 | Run `AthanTime-1.0.2-beta.7-win-x64-setup.exe`. Interactive setup offers Only me/All users and preselects the existing scope. Each selected installation retains its registered scope and original folder, including custom folders from 1.0.0. No prior uninstall is required. |
-| Debian/Ubuntu | Build the matching `amd64`/`arm64` DEB on Linux, then use `sudo apt install ./AthanTime-1.0.2-beta.7-amd64.deb` (choose the matching file). The stable `athan-time` package identity supports fresh installation and upgrades. |
+| Windows x64 | Run `AthanTime-1.0.2-beta.9-Windows-x64-Setup.exe`. Interactive setup offers Only me/All users and preselects the existing scope. Each selected installation retains its registered scope and original folder, including custom folders from 1.0.0. No prior uninstall is required. |
+| Debian/Ubuntu | Build the matching `amd64`/`arm64` DEB on Linux, then use `sudo apt install ./AthanTime-1.0.2-beta.9-Linux-x64.deb` (choose the matching file). The stable `athan-time` package identity supports fresh installation and upgrades. |
 | macOS | Build the matching Intel/Apple Silicon DMG on macOS. Open it and copy **Athan Time.app** to the same Applications folder, choosing Replace for the existing bundle. |
 
-Windows interactive setup offers Retry/Cancel when it cannot write the existing
-executable. Silent `/S` setup returns exit code 2 in that case. It does not
-terminate the application. A fresh install accepts `/D=C:\Path with spaces` as
+Windows setup first requests graceful shutdown as described above. Interactive setup offers Retry/Cancel when it cannot write the existing
+executable. Silent `/S` setup returns exit code 2 in that case. It never
+force-terminates the application. A fresh install accepts `/D=C:\Path with spaces` as
 its last argument, without quotes around that argument; registered updates keep
 their original path. Re-running the same setup can replace the bundled files.
 Silent setup defaults to Only me on a fresh computer; `/CurrentUser` and
@@ -1316,12 +2019,12 @@ unregistered application folder is rejected. All-users silent setup still needs
 administrator approval unless the invoking process is already elevated.
 
 Uninstall removes that package's known files, shortcuts and registration,
-preserving the profile and unrecognized user-added files; an installation folder
+preserving the profile by default and always preserving unrecognized user-added files; an installation folder
 containing user files can therefore remain. Uninstalling does not remove a login
 entry that points to another installation. An installer-owned `athan-install.ini`
 records the directory's scope for uninstall; old unmarked installations retain
-legacy current-user behavior. Machine uninstall does not inspect or change
-any user's login entries; each user should disable **Start when I sign in** before
+legacy current-user behavior. Machine uninstall does not inspect other profiles; optional interactive cleanup
+affects only the desktop user. Other users should disable **Start when I sign in** before
 shared removal. Per-user uninstall removes only its own matching startup entry.
 An older Windows uninstaller also leaves the shared uninstall registration and
 Start Menu shortcut intact when they belong to another registered installation.
@@ -1375,7 +2078,7 @@ and version-upgrade checks still require their matching disposable OS environmen
 
 ## Debian/Ubuntu package
 
-On Debian or Ubuntu with the .NET 10 SDK and `dpkg-deb`:
+On Debian or Ubuntu with the .NET 11 SDK and `dpkg-deb`:
 
 ```bash
 chmod +x packaging/linux/build-deb.sh
@@ -1383,7 +2086,7 @@ chmod +x packaging/linux/build-deb.sh
 ```
 
 Defaults come from the shared version and native CPU. To override, supply the
-version and `amd64`/`arm64`, for example `./packaging/linux/build-deb.sh 1.0.2-beta.7 arm64`.
+version and `amd64`/`arm64`, for example `./packaging/linux/build-deb.sh 1.0.2-beta.8 arm64`.
 
 The DEB declares native .NET/UI/audio dependencies for Ubuntu 22.04 and newer
 and recent Debian releases. It uses X11 (XWayland on a Wayland desktop).
@@ -1393,7 +2096,7 @@ and [Avalonia platform requirements](https://docs.avaloniaui.net/docs/supported-
 
 ## macOS application and DMG
 
-On macOS with the .NET 10 SDK:
+On macOS with the .NET 11 SDK:
 
 ```bash
 chmod +x packaging/macos/build-app.sh
@@ -1401,12 +2104,12 @@ chmod +x packaging/macos/build-app.sh
 ```
 
 Defaults come from the shared version and native CPU. To override, supply the
-version and RID, for example `./packaging/macos/build-app.sh 1.0.2-beta.7 osx-x64`.
+version and RID, for example `./packaging/macos/build-app.sh 1.0.2-beta.8 osx-x64`.
 The script creates an `.app` bundle and a DMG with
 Apple's built-in `hdiutil`.
 
 The DMG contains the `.app` and an Applications shortcut; drag to install.
-The minimum macOS version is 14, matching Avalonia's current free-support range.
+The minimum supported macOS version is 15, matching the .NET 11 baseline.
 All native scripts use isolated staging directories to avoid packaging obsolete files.
 
 ## Desktop testing from Windows
@@ -1414,7 +2117,7 @@ All native scripts use isolated staging directories to avoid packaging obsolete 
 For development on Windows 11 Pro, use an Ubuntu Desktop VM in Hyper-V for Linux
 installation, login, tray and repeat-launch checks. Ubuntu 24.04 x64 is one
 declared target, not coverage for ARM64 or every Linux desktop. Keep tests in a
-disposable guest profile and use the final self-contained DEB; the .NET 10 SDK is
+disposable guest profile and use the final self-contained DEB; the .NET 11 SDK is
 needed in a guest only when building source. Run the
 [manual smoke checklist](RELEASE-CHECKLIST.md#manual-native-smoke-tests), including
 repeated hidden/minimized window restoration. Ensure a usable guest audio device
@@ -1441,9 +2144,9 @@ Automated checks (2026-10-10): Debug and Release builds each completed with zero
 | Desktop target | Packaging baseline / validation still needed |
 | --- | --- |
 | Windows 11 x64 | Current supported Windows 11 build; verify setup, tray/audio and editor on the target machine. |
-| Windows 10 x64 | Avalonia lists 22H2/build 19045 as best-effort Tier 2. Microsoft now limits .NET 10 Windows 10 support to qualifying LTSC/Enterprise editions; do not promise full support for all Windows 10 editions/builds. Native testing is required. |
+| Windows 10 x64 | Avalonia lists 22H2/build 19045 as best-effort Tier 2. Microsoft limits .NET 11 Windows 10 support to qualifying LTSC/Enterprise editions; do not promise full support for all Windows 10 editions/builds. Native testing is required. |
 | Ubuntu x64/ARM64 | Target 22.04/24.04 or a supported newer release with the declared native dependencies and X11/XWayland. Verify GTK/file picker, fonts, tray and audio. |
-| macOS x64/ARM64 | macOS 14+; verify app launch, font/RTL rendering, tray and audio on Intel and Apple Silicon. |
+| macOS x64/ARM64 | macOS 15+; verify app launch, font/RTL rendering, tray and audio on Intel and Apple Silicon. |
 
 Reviewed against [Avalonia platform support](https://docs.avaloniaui.net/docs/supported-platforms), [Microsoft Windows/.NET support](https://learn.microsoft.com/en-us/dotnet/core/install/windows), and [Ubuntu/.NET dependencies](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install). Runtime compatibility and vendor support are distinct; this review does not replace native smoke tests.
 
@@ -1656,3 +2359,25 @@ now uses a provider-issued certificate and the Windows SDK SignTool; see
 certificate is available on this host, so the existing installer remains unsigned
 and its blocking issue is not yet resolved. macOS signing/notarization remains a
 separate Apple Developer process. Native target-OS verification is still required.
+
+## Beta.14 preparation (2026-11-17)
+
+Version **1.0.2-beta.14** includes checkbox alignment, simplified installer
+maintenance, original-user uninstall cleanup, Ubuntu dock registration and package
+guides. Local preparation builds Windows Setup, five self-contained portable ZIPs
+and reviewed source. Checksums and build evidence accompany
+`artifacts/releases/v1.0.2-beta.14/`; working copies are in `artifacts/packages/`.
+No GitHub upload, commit or tag is performed.
+
+The beta.14 Debug and Release builds and suites ran on Windows x64 on November 16:
+527 tests passed in each configuration, one symbolic-link permission skip each,
+zero warnings/errors. The resumed package preparation on November 17 checks all
+five runtime/native architectures, archive integrity, Unix launch permissions,
+canonical guides, setup/portable payload parity and source-file hashes. Evidence
+is under `artifacts/beta14-preparation/` and in the release's `BUILD-INFO.json`.
+The five architecture targets and .NET 11 self-contained deployment are unchanged.
+
+Native Windows install/update/uninstall/UAC and macOS/Linux desktop checks remain
+unverified. Native DEB/DMG creation requires matching hosts. Windows is unsigned;
+macOS is unsigned/not notarized. Recording redistribution rights remain
+unverified; retain and review the third-party notices before public distribution.

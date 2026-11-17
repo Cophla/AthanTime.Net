@@ -255,7 +255,7 @@ public sealed class VorbisAudioProvider : ISoundDataProvider
     }
 }
 
-/// <summary>Resolves the offline CC0 recordings shipped beside the application.</summary>
+/// <summary>Resolves the offline recordings shipped beside the application; provenance is in THIRD-PARTY-NOTICES.md.</summary>
 public static class BundledAudio
 {
     /// <summary>Bundled Athan recording.</summary>
@@ -264,18 +264,14 @@ public static class BundledAudio
     /// <summary>Short Takbeer recording.</summary>
     public static string Takbeer => Path.Combine(AppContext.BaseDirectory, "Assets", "Audio", "takbeer.ogg");
 
-    /// <summary>Short Tahmid recording.</summary>
-    public static string Alhamdulillah => Path.Combine(AppContext.BaseDirectory, "Assets", "Audio", "alhamdulillah.ogg");
-
     /// <summary>The bundled Adhkar playlist; user recordings can be added separately.</summary>
-    public static IReadOnlyList<string> AdhkarFiles => ["bundled:takbeer", "bundled:alhamdulillah"];
+    public static IReadOnlyList<string> AdhkarFiles => ["bundled:takbeer"];
 
     /// <summary>Maps a stable bundled identifier to its installation-local Ogg file.</summary>
     public static string Resolve(string path)
     {
         if (path.Equals("bundled:adhan", StringComparison.OrdinalIgnoreCase)) return Athan;
         if (path.Equals("bundled:takbeer", StringComparison.OrdinalIgnoreCase)) return Takbeer;
-        if (path.Equals("bundled:alhamdulillah", StringComparison.OrdinalIgnoreCase)) return Alhamdulillah;
         return path;
     }
 }
