@@ -217,7 +217,66 @@
         </ScrollViewer>
       </TabItem>
       <TabItem Header="{Binding SettingsLabel}">
-        <TabControl Name="SettingsPages" ItemContainerTheme="{StaticResource SectionTabTheme}">
+        <TabControl Name="SettingsPages" SelectedIndex="0" ItemContainerTheme="{StaticResource SectionTabTheme}">
+          <TabItem Header="{Binding [General]}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Margin="20" Spacing="18" MaxWidth="700" HorizontalAlignment="Stretch">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section" Text="{Binding [SettingsTransfer]}" />
+              <TextBlock Text="{Binding [SettingsAllBackupHelp]}" Classes="caption" />
+              <ComboBox Name="SettingsBackupScope" SelectedIndex="0" HorizontalAlignment="Stretch">
+                <ComboBoxItem Tag="All" Content="{Binding [SettingsAllBackup]}" />
+                <ComboBoxItem Tag="General" Content="{Binding [General]}" />
+                <ComboBoxItem Tag="Location" Content="{Binding [Location]}" />
+                <ComboBoxItem Tag="PrayerClock" Content="{Binding [PrayerClock]}" />
+                <ComboBoxItem Tag="AudioAdhkar" Content="{Binding [AudioAdhkar]}" />
+                <ComboBoxItem Tag="MovementBreaks" Content="{Binding [MovementBreaks]}" />
+              </ComboBox>
+              <WrapPanel>
+                <Button Name="ExportSettingsButton" Content="{Binding [ExportSettings]}" Click="OnExportSettings" Margin="0,4,8,4" />
+                <Button Name="ImportSettingsButton" Content="{Binding [ImportSettings]}" Click="OnImportSettings" Margin="0,4,8,4" />
+              </WrapPanel>
+              <TextBlock Text="{Binding [SettingsTransferHelp]}" Classes="caption" />
+            </StackPanel>
+          </Border>
+          <Border Classes="card"><StackPanel Spacing="10">
+              <TextBlock Text="{Binding [ReadingHighlightSpeed]}" />
+              <NumericUpDown Name="ReadingHighlightSpeedInput" Value="{Binding ReadingHighlightSpeed}" Minimum="2" Maximum="20"
+                             ShowButtonSpinner="True" Width="140" HorizontalAlignment="Left"
+                             AutomationProperties.Name="{Binding [ReadingHighlightSpeed]}" />
+              <TextBlock Text="{Binding [ReadingHighlightSpeedHelp]}" Classes="caption" />
+              <CheckBox Content="{Binding DarkModeLabel}" IsChecked="{Binding UseDarkMode}" />
+              <CheckBox Content="{Binding [EnableLogging]}" IsChecked="{Binding LoggingEnabled}" />
+              <TextBlock Text="{Binding LoggingError}" Classes="caption" />
+              <CheckBox Content="{Binding [DebugLogging]}" IsChecked="{Binding DebugLoggingEnabled}" IsEnabled="{Binding LoggingEnabled}" />
+              <Button Name="EmailLogsButton" Content="{Binding [EmailLogs]}" Click="OnEmailLogs" />
+              <CheckBox Content="{Binding CloseToTrayLabel}" IsChecked="{Binding CloseToTray}" />
+              <CheckBox Content="{Binding [StartMinimized]}" IsChecked="{Binding StartMinimized}" />
+              <CheckBox Content="{Binding [StartOnLogin]}" IsChecked="{Binding StartOnLogin}" />
+              <TextBlock Text="{Binding LoginStartupError}" Classes="caption" />
+              <TextBlock Name="SettingsStatusText" Text="{Binding SettingsStatus}" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,5,0,0">
+                <Button Classes="nav" Content="{Binding HelpLabel}" Click="OnHelp" HorizontalContentAlignment="Center" />
+                <Button Grid.Column="1" Classes="nav" Content="{Binding AboutLabel}" Click="OnAbout" HorizontalContentAlignment="Center" />
+              </Grid>
+              <WrapPanel Margin="0,5">
+                <Button Name="ProjectPageButton" Content="{Binding [ProjectPage]}" Click="OnOpenProjectPage" Margin="0,4,8,4" />
+                <Button Name="ReleasesPageButton" Content="{Binding [ReleasesPage]}" Click="OnOpenReleasesPage" Margin="0,4,8,4" />
+              </WrapPanel>
+              <Expander Header="{Binding [Feedback]}" Margin="0,5">
+                <StackPanel Spacing="10" Margin="0,10">
+                  <TextBlock Text="{Binding [EmailHelp]}" Classes="caption" />
+                  <Button Content="{Binding [Suggestion]}" Click="OnSuggestion" />
+                  <Button Content="{Binding [Complaint]}" Click="OnComplaint" />
+                </StackPanel>
+              </Expander>
+              <Button Name="ResetProfileButton" Content="{Binding [ResetProfile]}" Click="OnResetProfile" HorizontalAlignment="Left" />
+              <Button Content="{Binding TrayExitLabel}" Click="OnExit" HorizontalAlignment="Stretch" />
+            </StackPanel></Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
           <TabItem Header="{Binding [Location]}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
               <StackPanel Margin="20" Spacing="18" MaxWidth="700" HorizontalAlignment="Stretch">
@@ -229,7 +288,9 @@
                   <TextBlock Classes="caption" Text="{Binding OfflineLabel}" Foreground="{DynamicResource AccentTextBrush}" />
                 </Border>
               </Grid>
-              <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{Binding SearchPlaceLabel}" />
+              <TextBox Name="LocationSearchInput" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="{Binding SearchPlaceLabel}" PlaceholderForeground="{DynamicResource MutedTextBrush}"
+                       VerticalContentAlignment="Center" Padding="12,0" />
               <ScrollViewer MaxHeight="240"><ItemsControl ItemsSource="{Binding SearchResults}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
@@ -487,43 +548,40 @@
               </StackPanel>
             </ScrollViewer>
           </TabItem>
-          <TabItem Header="{Binding [General]}">
+          <TabItem Header="{Binding [MovementBreaks]}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
               <StackPanel Margin="20" Spacing="18" MaxWidth="700" HorizontalAlignment="Stretch">
-          <Border Classes="card"><StackPanel Spacing="10">
-              <CheckBox Content="{Binding DarkModeLabel}" IsChecked="{Binding UseDarkMode}" />
-              <CheckBox Content="{Binding [EnableLogging]}" IsChecked="{Binding LoggingEnabled}" />
-              <TextBlock Text="{Binding LoggingError}" Classes="caption" />
-              <CheckBox Content="{Binding [DebugLogging]}" IsChecked="{Binding DebugLoggingEnabled}" IsEnabled="{Binding LoggingEnabled}" />
-              <Button Name="EmailLogsButton" Content="{Binding [EmailLogs]}" Click="OnEmailLogs" />
-              <CheckBox Content="{Binding CloseToTrayLabel}" IsChecked="{Binding CloseToTray}" />
-              <CheckBox Content="{Binding [StartMinimized]}" IsChecked="{Binding StartMinimized}" />
-              <CheckBox Content="{Binding [StartOnLogin]}" IsChecked="{Binding StartOnLogin}" />
-              <TextBlock Text="{Binding LoginStartupError}" Classes="caption" />
-              <TextBlock Classes="section" Text="{Binding [SettingsTransfer]}" />
-              <TextBlock Text="{Binding [SettingsTransferHelp]}" Classes="caption" />
-              <WrapPanel>
-                <Button Name="ExportSettingsButton" Content="{Binding [ExportSettings]}" Click="OnExportSettings" Margin="0,4,8,4" />
-                <Button Name="ImportSettingsButton" Content="{Binding [ImportSettings]}" Click="OnImportSettings" Margin="0,4,8,4" />
-              </WrapPanel>
-              <TextBlock Name="SettingsStatusText" Text="{Binding SettingsStatus}" TextWrapping="Wrap" />
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,5,0,0">
-                <Button Classes="nav" Content="{Binding HelpLabel}" Click="OnHelp" HorizontalContentAlignment="Center" />
-                <Button Grid.Column="1" Classes="nav" Content="{Binding AboutLabel}" Click="OnAbout" HorizontalContentAlignment="Center" />
-              </Grid>
-              <WrapPanel Margin="0,5">
-                <Button Name="ProjectPageButton" Content="{Binding [ProjectPage]}" Click="OnOpenProjectPage" Margin="0,4,8,4" />
-                <Button Name="ReleasesPageButton" Content="{Binding [ReleasesPage]}" Click="OnOpenReleasesPage" Margin="0,4,8,4" />
-              </WrapPanel>
-              <Expander Header="{Binding [Feedback]}" Margin="0,5">
-                <StackPanel Spacing="10" Margin="0,10">
-                  <TextBlock Text="{Binding [EmailHelp]}" Classes="caption" />
-                  <Button Content="{Binding [Suggestion]}" Click="OnSuggestion" />
-                  <Button Content="{Binding [Complaint]}" Click="OnComplaint" />
-                </StackPanel>
-              </Expander>
-              <Button Content="{Binding TrayExitLabel}" Click="OnExit" HorizontalAlignment="Stretch" />
-            </StackPanel></Border>
+                <Border Classes="card"><StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="{Binding [MovementBreaks]}" />
+                  <TextBlock Classes="caption" Text="{Binding [MovementBreaksHelp]}" />
+                  <CheckBox Name="MovementEnabledCheckBox" IsEnabled="{Binding MovementSettingsLoaded}" Content="{Binding [MovementBreaksEnabled]}" IsChecked="{Binding MovementBreaksEnabled}" />
+                  <TextBlock Text="{Binding [MovementIntervalMinutes]}" />
+                  <NumericUpDown Name="MovementIntervalInput" IsEnabled="{Binding MovementSettingsLoaded}" Minimum="1" Maximum="1440" Value="{Binding MovementIntervalMinutes}" Width="140" HorizontalAlignment="Left" />
+                  <TextBlock Text="{Binding [MovementDisplaySeconds]}" />
+                  <NumericUpDown Name="MovementDurationInput" IsEnabled="{Binding MovementSettingsLoaded}" Minimum="5" Maximum="600" Value="{Binding MovementDisplaySeconds}" Width="140" HorizontalAlignment="Left" />
+                  <Button Name="MovementTestButton" IsEnabled="{Binding MovementSettingsLoaded}" Content="{Binding [MovementTest]}" Click="OnTestMovementBreak" HorizontalAlignment="Left" />
+                  <TextBlock Classes="caption" Text="{Binding [MovementSafety]}" />
+                  <TextBlock Classes="section" Text="{Binding [MovementPracticeList]}" />
+                  <ListBox Name="MovementPracticeSelector" IsEnabled="{Binding MovementSettingsLoaded}" ItemsSource="{Binding MovementPractices}" SelectedItem="{Binding SelectedMovementPractice}" MinHeight="90" MaxHeight="160">
+                    <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" TextWrapping="Wrap" /></DataTemplate></ListBox.ItemTemplate>
+                  </ListBox>
+                  <TextBlock Text="{Binding [MovementTranslationLanguage]}" />
+                  <ComboBox Name="MovementLanguageSelector" IsEnabled="{Binding MovementSettingsLoaded}" ItemsSource="{Binding Languages}" SelectedItem="{Binding MovementEditorLanguage}">
+                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding NativeName}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="{Binding [MovementPracticeText]}" />
+                  <TextBox Name="MovementInstructionInput" IsEnabled="{Binding MovementSettingsLoaded}" Text="{Binding MovementTextDraft}" FlowDirection="{Binding MovementInstructionDirection}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80" MaxHeight="160" MaxLength="1000" />
+                  <WrapPanel>
+                    <Button Name="MovementAddButton" IsEnabled="{Binding MovementSettingsLoaded}" Margin="0,4,8,4" Content="{Binding [MovementAdd]}" Click="OnAddMovementPractice" />
+                    <Button Name="MovementUpdateButton" IsEnabled="{Binding MovementSettingsLoaded}" Margin="0,4,8,4" Content="{Binding [MovementUpdate]}" Click="OnUpdateMovementPractice" />
+                    <Button Name="MovementRemoveButton" IsEnabled="{Binding MovementSettingsLoaded}" Margin="0,4,8,4" Content="{Binding [MovementRemove]}" Click="OnRemoveMovementPractice" />
+                  </WrapPanel>
+                  <TextBlock Classes="caption" Text="{Binding [MovementTranslationHelp]}" />
+                  <TextBlock Classes="caption" Text="{Binding [MovementMaxIdeas]}" />
+                  <TextBlock Name="MovementStorageStatus" Text="{Binding MovementStatus}" TextWrapping="Wrap" />
+                  <Button Name="MovementReloadButton" Content="{Binding [MovementRetry]}" Click="OnReloadMovementBreaks" IsVisible="{Binding MovementStorageFailed}" />
+                  <TextBlock Classes="caption" Text="{Binding [MovementStorageHelp]}" />
+                </StackPanel></Border>
               </StackPanel>
             </ScrollViewer>
           </TabItem>

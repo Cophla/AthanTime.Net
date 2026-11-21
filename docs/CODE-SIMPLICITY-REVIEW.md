@@ -1,5 +1,106 @@
 # Code simplicity and resource review
 
+## Factory reset - 2026-11-20
+
+Reuse the current-user cleanup and themed confirmation. Close the log sink
+before cleanup and suppress placement writes before exiting successfully.
+Reopening uses the ordinary first-run path. The desktop remains open if the
+cleanup fails. Windows x64 Debug and Release each passed 588 tests, with seven
+symbolic-link permission skips. All five self-contained payload checks passed.
+Tests use isolated profiles and fake login registration. Native desktop reset
+and relaunch remain unverified.
+
+The first-run file probe follow-up on 2026-11-20 passed 591 of 598 tests
+in both configurations on Windows x64, with seven symlink permission skips.
+Absent settings, backup and placement files no longer raise first-chance
+exceptions in the first-run fixture. An invalid profile path still reports a
+load failure. All five self-contained payload checks passed.
+
+## Settings backups and reading highlights
+
+Settings > General owns one backup panel and one export/import picker pair.
+Its selector covers the top-level sections and the whole app. Audio subsections
+share the parent scope. Older subsection files keep their original narrow scope
+when restored through Audio & Adhkar.
+
+Settings sections share one versioned JSON transfer flow. The whole-app file
+also contains the movement preferences read by the existing SQLite repository.
+Beta.16 removed the unused parallel settings export/import API. Legacy flat
+settings files and previously exported audio subsection files still open through
+the consolidated flow. Tests exercise the same reader and writer as the desktop,
+including preservation of the selected city's active prayer-time corrections.
+The backup operation uses no database work during reminder ticks. Reading
+popups reuse Avalonia's selected-text foreground with a timer that stops at the
+end of the text or on close. General opens first and owns the reading pace
+preference shared by both popups. The existing reminder schedules still
+control display duration, priority and dismissal.
+
+Windows x64 verification on 2026-11-20, including the centralized backup panel
+and older audio-subsection restore coverage, passed 583 of 590 tests in each of
+Debug and Release. Seven symbolic-link cases required permissions unavailable
+on the test host. Both builds had zero warnings and errors. All five
+self-contained payload checks passed. Native file picker and popup behavior on
+the target desktops still require interactive checks.
+
+The General-first and speed-setting follow-up passed 585 of 592 tests in both
+Debug and Release, with the same seven symlink permission skips. Coverage includes
+the order and speed input in eight languages, both popup speeds, and older backup
+compatibility. All five self-contained payload checks passed.
+
+## City search and reminder clock - 2026-11-20
+
+The city search uses the native text field with centered text, horizontal
+padding and a theme-aware placeholder. The reminder tick shares one local time
+and UTC instant for its live displays, prayer checks and Adhkar hour selection.
+The prayer check walks three cached days directly, preserving the order of
+before, at-time and after reminders across midnight. This removes the LINQ
+iterator from the tick and avoids repeated time conversions in those paths.
+The existing clock still handles pause, resume and reminder priority. SQLite
+stores durable data and stays out of the tick. A second scheduler or a persistent
+job store would add lifecycle and misfire configuration for these same reminders.
+
+Windows x64 build 26300 with .NET SDK 11.0.100 passed 572 of 579 tests in
+both Debug and Release. Seven tests in each required Windows symbolic-link
+permissions. Both builds completed with zero warnings and errors. Tests cover
+the search field in all eight languages and both themes, reminder timing, and
+concurrent opens during the movement SQLite upgrade. Self-contained payload
+checks passed for Windows x64, Linux x64/ARM64 and macOS Intel/Apple Silicon.
+Native desktop checks and whole-process resource measurements remain open.
+
+## Movement breaks - 2026-11-19 (unreleased)
+
+Reuse the existing one-second clock, shared window appearance and already shipped
+SQLite package/native assets. Keep one bounded in-memory instruction list, simple
+due/expiry state and short-lived database connections. No Electron process, online
+translator, idle-monitoring service, native input hooks or extra timer is added.
+Keep movement persistence separate from the read-only city catalog and prayer-
+settings JSON transfer; make that boundary visible. A small dedicated transfer
+component maps the already bounded in-memory movement snapshot to portable JSON,
+without copying SQLite files, loading the city catalog or adding a resident
+background service.
+Read and validate before confirmation; write export files atomically. Original
+translated seeds are used only for a new database, preserving deliberate user edits
+and empty lists.
+The early development table without translation positions is rebuilt in one SQLite
+transaction, using its original row order and without a second migration framework.
+Existence checks avoid routine file-not-found exceptions for optional SQLite
+journal, WAL and shared-memory sidecars.
+
+This is source development, not a new release. On 2026-11-19, Windows x64
+Debug and Release each passed 569 of 576 tests, with seven symbolic-link
+permission skips per configuration. Both builds completed with zero errors using
+.NET SDK 11.0.100. Each reported two NU1900 warnings because the NuGet
+vulnerability service was unreachable; this did not complete the dependency
+vulnerability audit. Self-contained cross-publish/payload checks passed for all
+five RIDs, including seed/guide identity and seven static architecture checks for
+native files in each. Cross-publishing does not replace matching-OS execution.
+
+An isolated same-thread probe measured zero allocations for both the existing
+text clock and movement clock over 100,000 quiet ticks after 10,000 warm-up ticks.
+No forced GC was used. This checks the scheduler allocation path, not whole-process
+RAM/CPU/GPU. Keep those measurements distinct; avoid machine-dependent timing
+thresholds. Native Windows/macOS/Linux desktop behavior remains unverified.
+
 ## Release wording and confirmation - 2026-11-17
 
 Shorten the user-facing release description and remove duplicated README setup

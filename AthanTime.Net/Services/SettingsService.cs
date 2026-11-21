@@ -21,15 +21,15 @@ public interface ISettingsService
     /// <summary>Persists settings as formatted JSON.</summary>
     void Save(AppSettings settings);
 
-    /// <summary>Exports a normalized JSON snapshot without changing the active profile.</summary>
-    bool Export(AppSettings settings, string path);
+    /// <summary>Exports a named settings section or the full portable backup.</summary>
+    bool ExportBackup(AppSettings settings, MovementBreakPreferences? movement, string section, string path);
 
-    /// <summary>Reads and validates an import without applying it or changing the active profile.</summary>
-    AppSettings? ReadImport(string path);
+    /// <summary>Validates a backup and stages it against the current preferences.</summary>
+    SettingsBackup? ReadBackup(AppSettings current, string section, string path);
 }
 
 /// <inheritdoc />
-public sealed class SettingsService(ILogger<SettingsService> logger, ManualLocationService manualLocations,
+public sealed partial class SettingsService(ILogger<SettingsService> logger, ManualLocationService manualLocations,
     string settingsPath, Action<AppSettings>? initializeFirstRun = null) : ISettingsService
 {
     private const string DefaultResourceName = "AthanTime.Net.Data.default-settings.json";
@@ -109,54 +109,16 @@ public sealed class SettingsService(ILogger<SettingsService> logger, ManualLocat
         }
     }
 
-    /// <inheritdoc />
-    public bool Export(AppSettings settings, string path)
-    {
-        try
-        {
-            var fullPath = Path.GetFullPath(path);
-            if (IsProfilePath(fullPath)) throw new IOException("Export must not overwrite the active profile or its backup.");
-            if (settings.SchemaVersion > CurrentSchemaVersion)
-                throw new JsonException("A newer settings schema cannot be exported by this application version.");
-            var snapshot = Normalize(JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(settings, _jsonOptions), _jsonOptions)!);
-            snapshot.LocationMinuteAdjustments[snapshot.LocationId] = NormalizeAdjustments(settings.MinuteAdjustments);
-            snapshot.MinuteAdjustments = NormalizeAdjustments(settings.MinuteAdjustments);
-            WriteAtomic(fullPath, JsonSerializer.Serialize(snapshot, _jsonOptions));
-            SetStatus("SettingsExported");
-            _logger.LogInformation("Exported settings to {Path}", fullPath);
-            return true;
-        }
-        catch (Exception exception) when (IsStorageFailure(exception))
-        {
-            _logger.LogWarning(exception, "Settings export failed at {Path}", path);
-            SetStatus("SettingsExportFailed");
-            return false;
-        }
-    }
-
-    /// <inheritdoc />
-    public AppSettings? ReadImport(string path)
-    {
-        if (TryRead(path, out var settings, out _, out _, forImport: true))
-        {
-            SetStatus("");
-            _logger.LogInformation("Validated settings import from {Path}; it has not been applied", path);
-            return settings;
-        }
-        _logger.LogWarning("Settings import was rejected at {Path}", path);
-        SetStatus("SettingsImportFailed");
-        return null;
-    }
-
-    private bool TryRead(string path, out AppSettings? settings, out bool futureSchema, out bool failed, bool forImport = false)
+    private bool TryRead(string path, out AppSettings? settings, out bool futureSchema, out bool failed)
     {
         settings = null;
         futureSchema = false;
         failed = false;
         try
         {
+            // FileInfo uses -1 for a missing entry and still reports metadata access errors.
+            if (new FileInfo(path).Attributes == (FileAttributes)(-1)) return false;
             var json = File.ReadAllText(path);
-            if (forImport) ValidateImportDocument(json);
             settings = JsonSerializer.Deserialize<AppSettings>(json, _jsonOptions)
                 ?? throw new JsonException("Settings must be a JSON object.");
             futureSchema = settings.SchemaVersion > CurrentSchemaVersion;
@@ -257,6 +219,8 @@ public sealed class SettingsService(ILogger<SettingsService> logger, ManualLocat
         if (!Enum.IsDefined(settings.AsrJuristic)) settings.AsrJuristic = AsrJuristic.Standard;
         if (!Enum.IsDefined(settings.HighLatitudeRule)) settings.HighLatitudeRule = HighLatitudeRule.AngleBased;
         settings.AudioVolume = Math.Clamp(settings.AudioVolume, 0, 100);
+        settings.ReadingHighlightSpeed = Math.Clamp(settings.ReadingHighlightSpeed,
+            AppSettings.MinimumReadingHighlightSpeed, AppSettings.MaximumReadingHighlightSpeed);
         settings.NotificationPauseMinutes = Math.Clamp(settings.NotificationPauseMinutes, 1, 1440);
         settings.SummerTimeOverrides = (settings.SummerTimeOverrides ?? [])
             .Where(pair => !string.IsNullOrWhiteSpace(pair.Key) && pair.Value is not null)

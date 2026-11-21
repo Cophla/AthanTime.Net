@@ -179,7 +179,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         DefaultAdhkarRepository defaultAdhkar,
         LoggingLevelController loggingLevel,
         ILoginStartupService loginStartup,
-        TimeZoneService timeZones)
+        TimeZoneService timeZones,
+        IMovementBreakRepository movementRepository)
     {
         _prayerCalculator = prayerCalculator;
         _prayerConventionRepository = prayerConventionRepository;
@@ -198,6 +199,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         _loginStartup = loginStartup;
         _timeZones = timeZones;
         _settings = _settingsService.Load();
+        _movementRepository = movementRepository;
+        _movementEditorLanguage = Languages.FirstOrDefault(item => item.Code.Equals(_settings.Language, StringComparison.OrdinalIgnoreCase)) ?? Languages[0];
+        ReloadMovementBreaks();
         _raisedAlertKeys.UnionWith(_settings.RecentPrayerAlerts);
         _location = _settings.SavedLocations.FirstOrDefault(item => item.Id.Equals(_settings.LocationId, StringComparison.OrdinalIgnoreCase))
             ?? _locationRepository.Get(_settings.LocationId);
@@ -255,6 +259,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
             if (value is null || value.Code.Equals(_settings.Language, StringComparison.OrdinalIgnoreCase)) return;
             _settings.Language = value.Code;
             _lastDhikrHour = -1;
+            RefreshMovementTexts();
+            DismissMovementBreak();
             RebuildLocalizedCollections();
             SaveAndRefresh(localizationChanged: true);
         }
@@ -437,6 +443,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
             ? null : _timeProvider.GetUtcNow().AddMinutes(NotificationPauseMinutes);
         _adhkarScheduler.Reset();
         _textAdhkarScheduler.Reset();
+        ResetMovementBreaks();
         TextAdhkarChanged?.Invoke(this, null);
         if (NotificationsPaused)
         {
@@ -465,6 +472,20 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         get => _settings.UseDarkMode;
         set { if (value != _settings.UseDarkMode) { _settings.UseDarkMode = value; SaveAndRefresh(calculationChanged: false); } }
+    }
+
+    /// <summary>Shared reading pace for new Text Adhkar and Movement breaks popups.</summary>
+    public int ReadingHighlightSpeed
+    {
+        get => _settings.ReadingHighlightSpeed;
+        set
+        {
+            value = Math.Clamp(value, AppSettings.MinimumReadingHighlightSpeed, AppSettings.MaximumReadingHighlightSpeed);
+            if (value == _settings.ReadingHighlightSpeed) return;
+            _settings.ReadingHighlightSpeed = value;
+            _settingsService.Save(_settings);
+            OnPropertyChanged(nameof(ReadingHighlightSpeed));
+        }
     }
 
     public ThemeVariant SelectedTheme => UseDarkMode ? ThemeVariant.Dark : ThemeVariant.Light;
@@ -596,32 +617,77 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
     /// <summary>Hides the shared status banner when storage has no result or warning to report.</summary>
     public bool HasSettingsStatus => SettingsStatus.Length > 0;
 
-    /// <summary>Exports the JSON profile without bundling logs, coordinates databases or external audio files.</summary>
-    public bool ExportSettings(string path) => _settingsService.Export(_settings, path);
-
-    /// <summary>Reads and validates a proposed import without modifying active settings.</summary>
-    public AppSettings? ReadSettingsImport(string path)
+    private bool HasImportLocation(AppSettings imported)
     {
-        var imported = _settingsService.ReadImport(path);
-        if (imported is null) return null;
         var place = imported.SavedLocations.FirstOrDefault(item => item.Id.Equals(imported.LocationId, StringComparison.OrdinalIgnoreCase))
             ?? _locationRepository.Get(imported.LocationId);
-        if (place.Id.Equals(imported.LocationId, StringComparison.OrdinalIgnoreCase)) return imported;
+        if (place.Id.Equals(imported.LocationId, StringComparison.OrdinalIgnoreCase)) return true;
         _settingsActionStatusKey = "SettingsImportFailed";
         OnPropertyChanged(nameof(SettingsStatus));
         OnPropertyChanged(nameof(HasSettingsStatus));
         _logger.LogWarning("Settings import has an unknown location {LocationId}; active preferences unchanged", imported.LocationId);
-        return null;
+        return false;
     }
 
-    /// <summary>Applies a user-confirmed import while retaining this device's startup, logging and reminder history.</summary>
-    public void ApplyImportedSettings(AppSettings imported)
+    /// <summary>Exports the requested section, including the SQLite settings in an all-settings backup.</summary>
+    public bool ExportSettingsBackup(string section, string path) =>
+        _settingsService.ExportBackup(_settings, section == "All" && _movementLoaded ? _movementPreferences : null, section, path);
+
+    /// <summary>Validates a proposed backup before asking for confirmation.</summary>
+    public SettingsBackup? ReadSettingsBackup(string section, string path)
+    {
+        var backup = _settingsService.ReadBackup(_settings, section, path);
+        return backup is not null && HasImportLocation(backup.Settings)
+            && (backup.Movement is null || _movementLoaded) ? backup : null;
+    }
+
+    /// <summary>Saves the confirmed backup before refreshing the live settings.</summary>
+    public bool ApplySettingsBackup(SettingsBackup backup)
+    {
+        var imported = backup.Settings;
+        KeepDeviceSettings(imported);
+        imported.NotificationsPausedUntilUtc = backup.Section == "All" ? null : _settings.NotificationsPausedUntilUtc;
+        var previousMovement = _movementPreferences;
+        try
+        {
+            if (backup.Movement is { } movement)
+            {
+                if (!_movementLoaded) return false;
+                _movementRepository.Save(movement);
+            }
+            _settingsService.Save(imported);
+            if (_settingsService.StatusKey == "SettingsSaveFailed")
+            {
+                if (backup.Movement is not null) _movementRepository.Save(previousMovement);
+                return false;
+            }
+        }
+        catch (Exception exception) when (MovementStorageException(exception))
+        {
+            _logger.LogWarning(exception, "Could not save or restore the movement portion of the settings backup");
+            return false;
+        }
+
+        if (backup.Movement is { } replacement)
+        {
+            _movementPreferences = replacement;
+            _movementStorageFailed = false;
+            SelectedMovementPractice = null;
+        }
+        RefreshImportedSettings(imported);
+        return true;
+    }
+
+    private void KeepDeviceSettings(AppSettings imported)
     {
         imported.StartOnLogin = _settings.StartOnLogin;
         imported.LoggingEnabled = _settings.LoggingEnabled;
         imported.DebugLoggingEnabled = _settings.DebugLoggingEnabled;
         imported.RecentPrayerAlerts = _settings.RecentPrayerAlerts;
-        imported.NotificationsPausedUntilUtc = null;
+    }
+
+    private void RefreshImportedSettings(AppSettings imported)
+    {
         _settings = imported;
         _selectedAdhkarFile = null;
         _selectedAdhkarText = null;
@@ -642,11 +708,13 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         _textAdhkarScheduler.Reset();
         TextAdhkarChanged?.Invoke(this, null);
         NotificationsPausedChanged?.Invoke(this, EventArgs.Empty);
+        ResetMovementBreaks();
+        RefreshMovementTexts();
         _ = _audioPlayer.StopAsync();
         SearchText = "";
         // Import changes calculation inputs too; language-only refresh deliberately does not clear this cache.
         _scheduleCache.Clear();
-        SaveAndRefresh(localizationChanged: true);
+        SaveAndRefresh(localizationChanged: true, saveSettings: false);
         if (_settingsService.StatusKey.Length == 0) _settingsActionStatusKey = "SettingsImported";
         OnPropertyChanged(nameof(SettingsStatus));
         OnPropertyChanged(nameof(HasSettingsStatus));
@@ -703,6 +771,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         _pendingSearch = null;
         _audioPlayer.StatusChanged -= OnAudioStatusChanged;
         _settingsService.StatusChanged -= OnSettingsStatusChanged;
+        ResetMovementBreaks();
     }
 
     private void RefreshAll()
@@ -718,13 +787,15 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         HijriDate = _hijriDateService.Format(_selectedDate, _settings.Language, _settings.HijriAdjustment);
         QiblaValue = $"{_daily.QiblaBearing:0.0}° {T("Direction")}";
         MidnightValue = _daily.Midnight.ToString(timeFormat, culture);
-        RefreshDynamicValues();
+        var nowUtc = _timeProvider.GetUtcNow();
+        RefreshDynamicValues(LocationNow(nowUtc), nowUtc);
         RaiseAll();
     }
 
     /// <summary>Updates the clock and due reminders using the injected clock.</summary>
     public void Tick()
     {
+        _movementPrayerRaisedThisTick = false;
         var nowUtc = _timeProvider.GetUtcNow();
         if (_lastTickUtc is { } previousUtc && (nowUtc < previousUtc || nowUtc - previousUtc > TimeSpan.FromSeconds(5)))
         {
@@ -732,6 +803,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
             _reminderNotBeforeUtc = nowUtc;
             _adhkarScheduler.Reset();
             _textAdhkarScheduler.Reset();
+            ResetMovementBreaks();
             TextAdhkarChanged?.Invoke(this, null);
             _logger.LogDebug("Reminder clocks restarted after UTC clock gap {Gap}", nowUtc - previousUtc);
         }
@@ -761,11 +833,13 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
             _settingsService.Save(_settings);
             _adhkarScheduler.Reset();
             _textAdhkarScheduler.Reset();
+            ResetMovementBreaks();
             OnPropertyChanged(nameof(NotificationsPaused));
             OnPropertyChanged(nameof(PauseButtonLabel));
             _logger.LogInformation("Automatic reminder pause expired");
         }
-        var locationToday = DateOnly.FromDateTime(LocationNow());
+        var localNow = LocationNow(nowUtc);
+        var locationToday = DateOnly.FromDateTime(localNow);
         if (_currentDaily?.Date != locationToday)
         {
             if (_selectedDate == _currentDaily?.Date) _selectedDate = locationToday;
@@ -775,17 +849,17 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         else
         {
             // Setters notify changed values on every refresh path, including date/clock jumps.
-            RefreshDynamicValues();
+            RefreshDynamicValues(localNow, nowUtc);
         }
         // Explicit text tests expire even while automatic reminders are paused or disabled.
         var textPreview = _textAdhkarScheduler.IsPreview;
         if (textPreview && _textAdhkarScheduler.Tick(_settings.TextAdhkar, nowUtc))
             TextAdhkarChanged?.Invoke(this, _textAdhkarScheduler.CurrentText);
-        if (NotificationsPaused) return;
-        CheckPrayerAlert(LocationNow(), nowUtc);
+        if (NotificationsPaused) { TickMovementBreaks(nowUtc); return; }
+        CheckPrayerAlert(locationToday, nowUtc);
         var file = _adhkarScheduler.TakeDue(_settings.Adhkar, nowUtc, _audioPlayer.IsBusy);
         if (file is not null) _ = _audioPlayer.PlayAsync(BundledAudio.Resolve(file), _settings.AudioVolume, interrupt: false);
-        var localHour = LocationNow().Hour;
+        var localHour = localNow.Hour;
         if (_lastDhikrHour != localHour)
         {
             _lastDhikrHour = localHour;
@@ -794,13 +868,12 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         }
         if (!textPreview && _textAdhkarScheduler.Tick(_settings.TextAdhkar, nowUtc, _defaultDhikrTexts))
             TextAdhkarChanged?.Invoke(this, _textAdhkarScheduler.CurrentText);
+        TickMovementBreaks(nowUtc);
     }
 
-    private void RefreshDynamicValues()
+    private void RefreshDynamicValues(DateTime now, DateTimeOffset nowUtc)
     {
         if (_daily is null) return;
-        var now = LocationNow();
-        var nowUtc = _timeProvider.GetUtcNow();
         CurrentClock = now.ToString(_settings.Use24HourClock ? "HH:mm:ss" : "h:mm:ss tt", Culture());
         var selectedPrayers = FindCurrentAndNext(_daily, nowUtc);
         RefreshSelectedSchedule(now, nowUtc, selectedPrayers);
@@ -885,12 +958,13 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         return (current, next);
     }
 
-    private void CheckPrayerAlert(DateTime now, DateTimeOffset nowUtc)
+    private void CheckPrayerAlert(DateOnly today, DateTimeOffset nowUtc)
     {
         if (_settings.LocationNeedsConfirmation || !_settings.NotificationsEnabled || _currentDaily is null
-            || _currentDaily.Date != DateOnly.FromDateTime(now)) return;
+            || _currentDaily.Date != today) return;
         // Adjacent days are required for before/after reminders that cross local midnight.
-        foreach (var prayer in Enumerable.Range(-1, 3).SelectMany(offset => Calculate(_currentDaily.Date.AddDays(offset)).Times))
+        for (var offset = -1; offset <= 1; offset++)
+        foreach (var prayer in Calculate(today.AddDays(offset)).Times)
         {
             var notification = _settings.PrayerNotifications[prayer.Prayer];
             var prayerUtc = PrayerUtc(prayer);
@@ -903,7 +977,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    private DateTime LocationNow() => _timeZones.ToLocal(_timeProvider.GetUtcNow(), _timeZone, SummerTime);
+    private DateTime LocationNow() => LocationNow(_timeProvider.GetUtcNow());
+
+    private DateTime LocationNow(DateTimeOffset nowUtc) => _timeZones.ToLocal(nowUtc, _timeZone, SummerTime);
 
     // Real prayer instants avoid ambiguous or missing local hours at clock changes.
     private DateTimeOffset PrayerUtc(PrayerTime prayer) => prayer.UtcTime
@@ -927,10 +1003,10 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
     private string PrayerName(Prayer prayer) => T(prayer == Prayer.Asr ? "AsrPrayer" : prayer.ToString());
     private string T(string key) => _localizationService.Get(_settings.Language, key);
 
-    private void SaveAndRefresh(bool localizationChanged = false, bool calculationChanged = true)
+    private void SaveAndRefresh(bool localizationChanged = false, bool calculationChanged = true, bool saveSettings = true)
     {
         if (!localizationChanged && calculationChanged) _scheduleCache.Clear();
-        _settingsService.Save(_settings);
+        if (saveSettings) _settingsService.Save(_settings);
         RefreshAll();
         if (localizationChanged)
         {
@@ -1038,6 +1114,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged, IDisposable
         if (moment == PrayerAlertMoment.AtTime && _settings.PrayerAudioEnabled && notification.AudioEnabled)
             _ = _audioPlayer.PlayAsync(BundledAudio.Resolve(string.IsNullOrWhiteSpace(notification.AudioPath)
                 ? "bundled:adhan" : notification.AudioPath), _settings.AudioVolume);
+        _movementPrayerRaisedThisTick = true;
+        DismissMovementBreak();
         PrayerDue?.Invoke(this, CreatePrayerAlert(prayer, moment));
         _logger.LogInformation("Raised {Moment} reminder for {Prayer} at {LocationId}", moment, prayer.Prayer, _location.Id);
     }

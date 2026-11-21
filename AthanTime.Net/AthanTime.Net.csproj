@@ -3,25 +3,25 @@
     <RootNamespace>AthanTime.Net</RootNamespace>
     <OutputType>WinExe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Description>Offline prayer times and Athan reminders for Windows, macOS and Linux, with sunrise, Qibla direction, configurable reminders, audio and text Adhkar, eight languages, light/dark themes and local settings. Release $(Version).</Description>
+    <Description>Offline prayer times and Athan reminders for Windows, macOS and Linux, with sunrise, Qibla direction, configurable reminders, audio and text Adhkar, optional movement breaks, eight languages, light/dark themes and local settings. Release $(Version).</Description>
     <Product>Athan Time $(Version)</Product>
     <PackageProjectUrl>https://github.com/Cophla/AthanTime.Net</PackageProjectUrl>
     <ApplicationIcon>Assets\athan-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.3" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <PackageReference Include="Avalonia" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.6" />
     <PackageReference Include="Adhan" Version="0.9.0" />
-    <PackageReference Include="SoundFlow" Version="1.4.1" GeneratePathProperty="true" />
+    <PackageReference Include="SoundFlow" Version="1.4.2" GeneratePathProperty="true" />
     <PackageReference Include="NVorbis" Version="0.10.5" GeneratePathProperty="true" />
-    <PackageReference Include="NodaTime" Version="3.3.5" />
+    <PackageReference Include="NodaTime" Version="3.3.7" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
-    <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
-    <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.1" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="11.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="11.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
 
@@ -36,6 +36,7 @@
     <EmbeddedResource Include="Data\default-adhkar.json" />
     <EmbeddedResource Include="Data\ui-text.json" />
     <None Update="Data\desktop-control.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="Data\movement-breaks.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="appsettings*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\packaging\README.txt" Link="README.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\THIRD-PARTY-NOTICES.md" Link="licenses\ATHAN-THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
@@ -65,12 +66,15 @@
     </PropertyGroup>
     <Error Condition="'$(RuntimeSuffix)' == ''" Text="Unsupported publish runtime: $(RuntimeIdentifier)." />
     <ItemGroup>
-      <RequiredPayload Include="$(PublishDir)Assets/Audio/adhan.ogg;$(PublishDir)Assets/Audio/takbeer.ogg;$(PublishDir)NVorbis.dll" />
+      <RequiredPayload Include="$(PublishDir)Assets/Audio/adhan.ogg;$(PublishDir)Assets/Audio/takbeer.ogg;$(PublishDir)NVorbis.dll;$(PublishDir)SoundFlow.dll" />
+      <RequiredPayload Include="$(PublishDir)licenses/SOUNDFLOW-LICENSE.md;$(PublishDir)licenses/SOUNDFLOW-THIRD-PARTY-NOTICES.txt" />
       <RequiredPayload Include="$(PublishDir)$(AudioNative)" Condition="'$(AudioNative)' != ''" />
       <RequiredPayload Include="$(PublishDir)Data/locations.db;$(PublishDir)Data/desktop-control.json;$(PublishDir)Microsoft.Data.Sqlite.dll" />
+      <RequiredPayload Include="$(PublishDir)Data/movement-breaks.json" />
       <RequiredPayload Include="$(PublishDir)README.txt" />
       <RequiredPayload Include="$(PublishDir)$(SqliteNative)" Condition="'$(SqliteNative)' != ''" />
       <RequiredPayload Include="$(PublishDir)System.Private.CoreLib.dll;$(PublishDir)AthanTime.Net.runtimeconfig.json;$(PublishDir)$(RuntimePrefix)coreclr$(RuntimeSuffix);$(PublishDir)$(RuntimePrefix)hostfxr$(RuntimeSuffix)" />
+      <RequiredPayload Include="$(PublishDir)libSkiaSharp$(RuntimeSuffix);$(PublishDir)libHarfBuzzSharp$(RuntimeSuffix)" />
       <ObsoleteAudio Include="$(PublishDir)**/*.mp3" />
     </ItemGroup>
     <Error Condition="!Exists('%(RequiredPayload.Identity)')" Text="Missing offline deployment file: %(RequiredPayload.Identity)" />

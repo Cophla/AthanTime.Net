@@ -17,10 +17,36 @@ public sealed class ViewModelHarness(IPrayerConventionRepository conventions, IL
     public CountingCalculator Calculator { get; } = new();
 
     /// <summary>Creates the screen without starting the clock; an optional controlled repository exercises search concurrency.</summary>
-    public MainViewModel Create(ILocationRepository? locationRepository = null, IPrayerCalculator? calculator = null) => new(calculator ?? Calculator, conventions,
+    public MainViewModel Create(ILocationRepository? locationRepository = null, IPrayerCalculator? calculator = null,
+        IMovementBreakRepository? movementRepository = null) => new(calculator ?? Calculator, conventions,
         locationRepository ?? locations, localization, hijri, Settings,
         logger, manual, Audio, adhkar, Clock, textAdhkar, defaultAdhkar, loggingLevel,
-        loginStartup, timeZones);
+        loginStartup, timeZones, movementRepository ?? new MemoryMovementRepository());
+}
+
+/// <summary>Isolates movement preferences from real profiles and counts database boundaries.</summary>
+public sealed class MemoryMovementRepository : IMovementBreakRepository
+{
+    public MovementBreakPreferences Value { get; set; } = new()
+    {
+        Practices = [new("first", new Dictionary<string, string> { ["en"] = "Rest your hands.", ["ar"] = "أرح يديك." }),
+            new("second", new Dictionary<string, string> { ["en"] = "Stand comfortably." })]
+    };
+    public int Loads { get; private set; }
+    public int Saves { get; private set; }
+    public int Exports { get; private set; }
+    public int Imports { get; private set; }
+    public MovementBreakPreferences? ExportValue { get; private set; }
+    public MovementBreakPreferences? ImportValue { get; set; }
+    public bool Fail { get; set; }
+    /// <inheritdoc />
+    public MovementBreakPreferences Load() { Loads++; if (Fail) throw new IOException("Test storage failure"); return Value; }
+    /// <inheritdoc />
+    public void Save(MovementBreakPreferences preferences) { Saves++; if (Fail) throw new IOException("Test storage failure"); Value = preferences; }
+    /// <inheritdoc />
+    public void Export(MovementBreakPreferences preferences, string path) { Exports++; if (Fail) throw new IOException("Test storage failure"); ExportValue = preferences; }
+    /// <inheritdoc />
+    public MovementBreakPreferences ReadImport(string path) { Imports++; if (Fail) throw new IOException("Test storage failure"); return ImportValue ?? Value; }
 }
 
 /// <summary>Deterministic UTC test clock.</summary>
@@ -53,9 +79,8 @@ public sealed class MemorySettings : ISettingsService
     /// <inheritdoc />
     public void Save(AppSettings settings) => Saves++;
     /// <inheritdoc />
-    public bool Export(AppSettings settings, string path) => true;
-    /// <inheritdoc />
-    public AppSettings? ReadImport(string path) => null;
+    public bool ExportBackup(AppSettings settings, MovementBreakPreferences? movement, string section, string path) => true;
+    public SettingsBackup? ReadBackup(AppSettings current, string section, string path) => null;
 }
 
 /// <summary>Records playback requests without opening a sound device.</summary>

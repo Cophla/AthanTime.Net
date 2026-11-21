@@ -53,13 +53,14 @@ preserve existing published versions and binaries unless their exact change is c
   next prayer, UTC-based countdown, selected-date navigation, Islamic midnight and
   qibla. Today is primary; all six times
   fit the default 1180×800 window. Center first startup; keep 980×600 scrollable/readable.
-- Settings: Location, Prayer & clock, Audio & Adhkar, General. Light/dark themes,
+- Settings opens on General, then Location, Prayer & clock, Audio & Adhkar and Movement breaks. Light/dark themes,
   readable buttons/numbers, visibly bordered tabs with distinct filled selection
   and keyboard focus, Help/About/version and one confirmed exit path.
   App-owned confirmations, information dialogs, prayer popups and text-Adhkar
   windows share the main window's palette, typography, card surfaces and control
-  sizing. Follow selected theme and RTL/LTR direction while open. Keep text-Adhkar
+  sizing. Follow selected theme and RTL/LTR direction while open. Keep text-Adhkar and movement-break
   windows non-activating. OS file pickers retain the platform's native appearance.
+  Center the city search placeholder and typed text vertically with space on both sides.
   Action buttons share the main window's green palette, rounded bordered shape,
   readable labels and hover/pressed/disabled states, with visible keyboard focus.
 - Public links: use https://github.com/Cophla/AthanTime.Net for the project and https://github.com/Cophla/AthanTime.Net/releases for downloads, including betas. General settings opens these through the OS browser on explicit user action. About provides a concise localized feature summary and explicitly clickable, visibly underlined project/download URLs. About renders the version in a separate LTR block so RTL text cannot reorder it. About, support drafts and package metadata carry the same approved links. Automatic online version checking remains a proposed optional feature.
@@ -81,7 +82,8 @@ preserve existing published versions and binaries unless their exact change is c
   population ranking and translated alternate names where available. Also allow
   saved manual coordinates with a validated IANA zone and optional country code.
   Use a prebuilt read-only SQLite catalog with bounded query memory; do not load all
-  places or build the search index at startup. Settings and transfers remain JSON.
+  places or build the search index at startup. Existing prayer settings and transfers remain JSON;
+  movement-break settings and instructions use their separate per-user SQLite store.
   Source checkouts version the prebuilt catalog as `locations.db.zip`; MSBuild
   extracts it incrementally under configuration/RID-local `obj` and copies it as
   `Data/locations.db` to build/publish outputs on all supported platforms. No
@@ -180,6 +182,8 @@ preserve existing published versions and binaries unless their exact change is c
   policy, elevation and the primary instance's desktop/session. Keep ownership
   while minimized/in the tray and until host
   shutdown completes. Normal exit or forced termination permits a fresh launch.
+  When minimized startup uses the taskbar instead of hiding to the tray, show the
+  window without requesting focus and minimize it once after the platform shows it.
   Handle macOS shell/Dock `Reopen` activation through the same UI path, including
   when Launch Services reuses the process. Keep ordinary background/file/URI
   activation separate; reopening must not apply settings or dispatch reminders.
@@ -364,10 +368,92 @@ Invalid drafts cannot replace active rules; invalid loaded seasons stay visibly
 inactive, never an automatic fallback. Retain old forced-state preferences when
 `UseCustomSchedule` is absent. Failed writes stay visible and can be retried.
 
+## Movement breaks
+
+Beta.16 adds Settings > Movement breaks, using shared theme/button styles and
+all eight UI languages. It is opt-in and disabled initially. The user chooses a
+full pause between breaks (default 30 minutes, range 1–1440) and popup duration
+(default 20 seconds, range 5–600). Closing/expiry/Done starts a full pause;
+Snooze waits five minutes. Test works without enabling automatic reminders and
+must not advance their idea rotation; snoozing a test never enables automation.
+Restarting the app starts a fresh full pause rather than resuming an old deadline.
+
+Use the existing one-second app clock. Prayer popups/audio and text Adhkar take
+priority; skip occupied intervals instead of queuing catch-up notifications.
+Sleep, backward or greater-than-five-second clock gaps, global pause/resume,
+settings import and disposal reset the interval and close the movement popup.
+Timing requires an awake, running, responsive app; it is not a wake-up alarm or
+medical guarantee. Suggestions are gentle, original prompts with a visible
+comfort/safety note, not a prescribed treatment routine.
+
+Keep practice text, per-language translations and movement settings in writable
+`movement-reminders.db` under the current OS user's app-data folder, separate
+from the read-only location catalog. Seed eight original ideas in all eight
+languages only when creating a database; an intentionally empty saved list stays
+empty. Bound the list to 100 ideas and each instruction to 1,000 characters per
+language. Cache the bounded list in memory, use short-lived connections on load or
+edit, and perform no database queries, extra timers or network calls on ticks.
+Transactionally upgrade the early development database shape that lacks stored
+translation order, retaining its settings, custom text and original insertion
+order. Missing optional journal/WAL/shared-memory sidecars are normal and must not
+be detected by deliberately throwing file-not-found exceptions.
+
+The editor adds/removes ideas and saves manually entered translations for a chosen
+language. Missing translations visibly fall back to English or the first available
+original in its stable saved order; arbitrary custom text is not translated
+automatically offline. Shared UI captions remain in `Data/ui-text.json`.
+
+Keep a dedicated movement transfer alongside the whole-app backup. The standalone
+portable movement JSON contains enabled state, interval, popup duration and every
+idea/translation in stable order; it does not contain runtime deadlines/history,
+prayer settings, audio, logs or the SQLite file itself. Export through an atomic
+same-directory temporary file and refuse active database/sidecar destinations.
+Import reads and validates a bounded supported-schema snapshot before showing an
+explicit replacement confirmation. Reject malformed, future-schema, duplicate,
+unsupported-language or out-of-range content without changing saved or active
+state. Cancel also changes nothing. Confirmed import transactionally replaces only
+movement preferences and ideas, closes an active movement popup and starts a fresh
+full interval. Ordinary prayer-settings import retains the saved movement data but
+also resets its runtime interval/popup. Explain both transfer boundaries in the UI.
+
+Normal uninstall keeps the database; explicit current-user settings cleanup removes
+only its known file/SQLite sidecars, preserving other users, recordings and unknown
+files.
+See [movement-break help and design references](MOVEMENT-BREAKS.md).
+
 ## JSON persistence and transfer
 
-- Configuration, defaults, conventions, translations and per-OS-user settings use JSON.
+- Settings > General offers Restore factory settings. Ask for explicit
+  confirmation before clearing the current OS user's settings and backup,
+  window placement, movement data, app logs and login startup registration.
+  Keep user recordings, exported backups and unrelated files. On success exit
+  without writing placement or logs back. The next launch uses ordinary first-run
+  rules, regional hints and bundled defaults. Report a failure in the app.
+  Missing profile, backup and placement files are expected on first run.
+  Check for their absence before attempting to read them.
+
+- Provide one backup panel under Settings > General. The user selects All
+  settings or a top-level section and uses the same Export and Import buttons.
+  Audio & Adhkar covers its subsections and accepts their older backup files.
+  Use a versioned, section-tagged file and validate before confirmation. The
+  All settings option includes both the portable JSON preferences and movement
+  SQLite preferences/ideas. Legacy JSON imports retain the existing movement
+  data. Apply only the selected scope. Device login registration, logging
+  choices and reminder history stay local. Backups do not contain audio or logs.
+- New text Adhkar settings show readings for five seconds. Preserve saved display
+  durations in both features. Settings > General controls the shared reading
+  highlight speed for new popups from 2 to 20 characters per second, initially 8.
+  Advance by grapheme, following the string direction and skipping spaces. Include
+  the speed in General and whole-app backups and preserve it when importing an older
+  backup without the field. The popup's
+  own short-lived timer controls the highlight and the existing app clock controls
+  dismissal and reminder timing.
+
+- Existing configuration, defaults, conventions, UI translations and prayer settings use JSON.
   The large location catalog is shipped as read-only SQLite generated from archived JSON.
+  Movement instructions, their translations and movement preferences are stored in
+  per-user SQLite at runtime and use their own bounded portable JSON transfer; they
+  are included in the whole-app transfer and can also be backed up separately.
   Development/Release files are developer environment defaults, not different user editions.
 - Write through a same-directory temporary file/rename and keep a validated
   `settings.json.bak`. Recovery Load does not rewrite the damaged primary; a later

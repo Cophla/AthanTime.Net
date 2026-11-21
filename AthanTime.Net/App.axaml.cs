@@ -34,6 +34,7 @@ public partial class App : Application
     private MainWindow? _window;
     private Window? _notification;
     private TextAdhkarWindow? _textAdhkarWindow;
+    private MovementBreakWindow? _movementWindow;
     private readonly SingleInstanceGuard? _singleInstance;
     private bool _exiting;
     private IActivatableLifetime? _activationLifetime;
@@ -67,6 +68,7 @@ public partial class App : Application
             _window = _createWindow();
             _window.ViewModel.PrayerDue += (_, alert) => ShowPrayerAlert(alert);
             _window.ViewModel.TextAdhkarChanged += (_, text) => ShowTextAdhkar(text);
+            _window.ViewModel.MovementBreakChanged += (_, text) => ShowMovementBreak(text);
             _window.ViewModel.NotificationsPausedChanged += (_, _) => { _notification?.Close(); _textAdhkarWindow?.Close(); };
             desktop.MainWindow = _window;
             CreateTrayIcon();
@@ -83,6 +85,7 @@ public partial class App : Application
                 _trayIcon?.Dispose();
                 _window.ViewModel.Dispose();
                 _textAdhkarWindow?.Close();
+                _movementWindow?.Close();
                 _notification?.Close();
                 _logger.LogInformation("Desktop lifetime exited");
             };
@@ -256,11 +259,16 @@ public partial class App : Application
         _notification?.Close();
         var notification = new PrayerNotificationWindow(_window.ViewModel, alert);
         _notification = notification;
+        _window.ViewModel.SetPrayerReminderVisible(true);
         var closeTimer = DispatcherTimer.RunOnce(notification.Close, TimeSpan.FromSeconds(30));
         notification.Closed += (_, _) =>
         {
             closeTimer.Dispose();
-            if (ReferenceEquals(_notification, notification)) _notification = null;
+            if (ReferenceEquals(_notification, notification))
+            {
+                _notification = null;
+                _window.ViewModel.SetPrayerReminderVisible(false);
+            }
         };
         notification.Show();
         _logger.LogInformation("Displayed {Moment} reminder for {Prayer} in {Location}", alert.Moment, alert.PrayerName, alert.LocationName);
@@ -273,6 +281,7 @@ public partial class App : Application
         _textAdhkarWindow = null;
         previous?.Close();
         if (text is null || _window is null) return;
+        _window.ViewModel.DismissMovementBreak();
         var popup = new TextAdhkarWindow(_window.ViewModel, text);
         _textAdhkarWindow = popup;
         popup.Closed += (_, _) =>
@@ -283,5 +292,22 @@ public partial class App : Application
         };
         popup.Show();
         _logger.LogDebug("Displayed a text Adhkar reminder");
+    }
+
+    private void ShowMovementBreak(string? text)
+    {
+        var previous = _movementWindow;
+        _movementWindow = null;
+        previous?.Close();
+        if (text is null || _window is null || _exiting) return;
+        var popup = new MovementBreakWindow(_window.ViewModel, text);
+        _movementWindow = popup;
+        popup.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(_movementWindow, popup)) return;
+            _movementWindow = null;
+            _window.ViewModel.DismissMovementBreak();
+        };
+        popup.Show();
     }
 }

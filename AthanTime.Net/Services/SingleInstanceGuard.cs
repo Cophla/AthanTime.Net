@@ -69,6 +69,9 @@ public sealed class SingleInstanceGuard : IDisposable
 
     private SingleInstanceGuard(Mutex? mutex, string applicationId) { _mutex = mutex; _applicationId = applicationId; }
 
+    // Release already holds the profile lease for the lifetime of the desktop.
+    internal bool HoldsLease => _mutex is not null;
+
     /// <summary>Returns an unguarded lifetime in Debug builds; Release acquires the per-user lease before host/UI startup.</summary>
     public static SingleInstanceGuard? TryAcquireForStartup(string applicationId = "org.athantime.net")
     {

@@ -348,7 +348,7 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
         window.Show();
         try
         {
-            ShowSettings(window, 2);
+            ShowSettings(window, 3);
             window.FindControl<TabControl>("AudioPages")!.SelectedIndex = 0;
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
             var row = vm.NotificationRows.Single(item => item.Prayer == prayer);
@@ -517,7 +517,7 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
         window.Show();
         try
         {
-            ShowSettings(window, 1);
+            ShowSettings(window, 2);
             var mode = window.FindControl<ComboBox>("SummerTimeModeInput")!;
             mode.SelectedItem = vm.SummerTimeModes.Single(item => item.Value == SummerTimeMode.CustomDates);
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
@@ -624,7 +624,7 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
         window.Show();
         try
         {
-            ShowSettings(window, 1);
+            ShowSettings(window, 2);
             foreach (var language in vm.Languages)
             foreach (var dark in new[] { false, true })
             {
@@ -769,7 +769,7 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
             PrayerNotifications = Enum.GetValues<Prayer>().ToDictionary(prayer => prayer, _ => new PrayerNotificationSettings())
         };
         var calls = harness.Calculator.Calls;
-        vm.ApplyImportedSettings(imported);
+        Assert.True(vm.ApplySettingsBackup(new SettingsBackup(imported, null, "All")));
         Assert.True(harness.Calculator.Calls > calls);
         Assert.Equal(9, vm.FajrAdjustment);
         Assert.Equal(FlowDirection.RightToLeft, vm.FlowDirection);
@@ -801,7 +801,7 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
         {
             var pages = window.FindControl<TabControl>("MainPages")!;
             var settings = window.FindControl<TabControl>("SettingsPages")!;
-            ShowSettings(window, 2);
+            ShowSettings(window, 3);
             var audio = window.FindControl<TabControl>("AudioPages")!;
             audio.SelectedIndex = 2;
             foreach (var language in vm.Languages)
@@ -811,7 +811,7 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
                 vm.UseDarkMode = dark;
                 Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
                 Assert.Equal(1, pages.SelectedIndex);
-                Assert.Equal(2, settings.SelectedIndex);
+                Assert.Equal(3, settings.SelectedIndex);
                 Assert.Equal(2, audio.SelectedIndex);
                 AssertTabSurfaces(window, pages);
                 AssertTabSurfaces(window, settings);
@@ -820,13 +820,13 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
                 if (string.Equals(language.Code, "en", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(language.Code, "ar", StringComparison.OrdinalIgnoreCase))
                 {
-                    ShowSettings(window, 0);
+                    ShowSettings(window, 1);
                     var directory = Path.Combine(AppContext.BaseDirectory, "ui-captures");
                     Directory.CreateDirectory(directory);
                     using var frame = window.CaptureRenderedFrame();
                     frame!.Save(Path.Combine(directory, $"tab-navigation-{language.Code}-{(dark ? "dark" : "light")}.png"),
                         PngBitmapEncoderOptions.Default);
-                    ShowSettings(window, 2);
+                    ShowSettings(window, 3);
                 }
             }
 
@@ -840,8 +840,8 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
             window.KeyRelease(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
             Assert.Equal(1, pages.SelectedIndex);
-            ClickTab(window, Assert.IsType<TabItem>(settings.Items[3]));
-            Assert.Equal(3, settings.SelectedIndex);
+            ClickTab(window, Assert.IsType<TabItem>(settings.Items[0]));
+            Assert.Equal(0, settings.SelectedIndex);
 
             vm.SelectedLanguage = vm.Languages.Single(language => string.Equals(language.Code, "ar", StringComparison.OrdinalIgnoreCase));
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
@@ -917,6 +917,14 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
         {
             var pages = window.FindControl<TabControl>("MainPages")!;
             var settings = window.FindControl<TabControl>("SettingsPages")!;
+            Assert.Equal(0, settings.SelectedIndex);
+            Assert.Equal(vm["General"], Assert.IsType<TabItem>(settings.SelectedItem).Header);
+            ShowSettings(window, 0);
+            var readingSpeed = window.FindControl<NumericUpDown>("ReadingHighlightSpeedInput")!;
+            readingSpeed.Value = 12;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(12, vm.ReadingHighlightSpeed);
+            Assert.Equal(12, harness.Settings.Value.ReadingHighlightSpeed);
             foreach (var language in vm.Languages)
             foreach (var dark in new[] { false, true })
             {
@@ -927,12 +935,27 @@ public sealed class MainViewModelTests(UiTestHost ui, ViewModelHarness harness, 
                 Assert.False(window.FindControl<TextBlock>("SettingsStatusBanner")!.IsVisible);
                 Assert.Equal(vm.TodayLabel, Assert.IsType<TabItem>(pages.Items[0]).Header);
                 Assert.Equal(vm.SettingsLabel, Assert.IsType<TabItem>(pages.Items[1]).Header);
-                string[] keys = ["Location", "PrayerClock", "AudioAdhkar", "General"];
+                string[] keys = ["General", "Location", "PrayerClock", "AudioAdhkar", "MovementBreaks"];
                 for (var section = 0; section < keys.Length; section++)
                 {
                     ShowSettings(window, section);
                     Assert.Equal(vm[keys[section]], Assert.IsType<TabItem>(settings.Items[section]).Header);
+                    var transferButtons = window.GetVisualDescendants().OfType<Button>()
+                        .Where(button => button.IsEffectivelyVisible &&
+                            (Equals(button.Content, vm["ExportSettings"]) || Equals(button.Content, vm["ImportSettings"])));
+                    Assert.Equal(section == 0 ? 2 : 0, transferButtons.Count());
                 }
+                ShowSettings(window, 0);
+                var pace = window.FindControl<NumericUpDown>("ReadingHighlightSpeedInput")!;
+                Assert.Equal(vm.ReadingHighlightSpeed, (int)pace.Value!.Value);
+                Assert.Equal(FlowDirection.LeftToRight, pace.FlowDirection);
+                Assert.Equal(vm["ReadingHighlightSpeed"], Avalonia.Automation.AutomationProperties.GetName(pace));
+                var scope = window.FindControl<ComboBox>("SettingsBackupScope")!;
+                Assert.Equal("All", Assert.IsType<ComboBoxItem>(scope.SelectedItem).Tag);
+                string[] scopes = ["All", "General", "Location", "PrayerClock", "AudioAdhkar", "MovementBreaks"];
+                Assert.Equal(scopes, scope.Items.Cast<ComboBoxItem>().Select(item => (string)item.Tag!));
+                Assert.All(scope.Items.Cast<ComboBoxItem>(), item =>
+                    Assert.Equal(vm[Equals(item.Tag, "All") ? "SettingsAllBackup" : (string)item.Tag!], item.Content));
                 var export = window.FindControl<Button>("ExportSettingsButton")!;
                 var import = window.FindControl<Button>("ImportSettingsButton")!;
                 Assert.Equal(vm["ExportSettings"], export.Content);

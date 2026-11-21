@@ -20,6 +20,8 @@ repeatedly. Linux retains a taskbar route where no usable tray is available.
 
 Audio is deployed through the SoundFlow NuGet package with native miniaudio binaries
 selected by RID. Decoding requires NVorbis; all audio assets are `.ogg`.
+The publish check also requires SoundFlow's notices and the native Skia and
+HarfBuzz libraries for the requested OS.
 Do not discard native libraries, enable trimming, or switch to single-file
 publishing without re-testing. VLC/FFmpeg are not prerequisites.
 See [audio deployment notes](AUDIO.md). Verify actual sound, file pickers, tray and
@@ -30,6 +32,54 @@ public-repository CI builds/tests/packages all five RIDs with
 `.github/workflows/desktop-validation.yml`; it never installs or launches a desktop
 session and is disabled for private repositories to avoid billed runner minutes.
 Local packaging remains independent of GitHub.
+
+In restricted build environments, set `AVALONIA_TELEMETRY_OPTOUT=1` before
+building to opt out of [Avalonia's build-time telemetry](https://github.com/AvaloniaUI/Avalonia.BuildServices#opting-out).
+
+### Linux minimized login startup
+
+In a disposable X11 or XWayland desktop session, enable **Start when I sign in
+(minimized)** with **Start minimized** unchecked. Sign out and back in, verify
+the window is minimized and available from the taskbar, then restore it. Start
+the app manually after quitting to verify it opens normally. The taskbar fallback
+requests minimization after the window is shown so the window manager can act on
+it. The headless regression covers the first opening and subsequent restoration.
+
+On 2026-11-20, Windows x64 Debug and Release each passed 572 tests with seven
+symbolic-link permission skips. Both builds reported NU1900 warnings because
+the NuGet vulnerability endpoint was unreachable. Self-contained payload checks
+passed for all five targets. Native desktop sign-in remains unverified.
+
+## Movement-break development (2026-11-19, before beta.16)
+
+Movement reminders were developed before the beta.16 version bump. See the
+[product contract](REQUIREMENTS.md#movement-breaks)
+and [movement-break help](MOVEMENT-BREAKS.md).
+
+New builds must ship `Data/movement-breaks.json` in all five payloads. The seed
+initializes original suggestions/translations only in a new per-user
+`movement-reminders.db`; never ship a developer's writable database. It uses the
+existing RID-matching SQLite native assets, adds no package/runtime prerequisite
+and never writes the bundled read-only location database. The standalone movement
+backup and the whole-app JSON backup carry bounded movement preferences, ideas
+and translations. Older settings-only files preserve the movement database.
+Normal uninstall keeps the database; explicit current-user settings removal includes
+only its known SQLite files/sidecars.
+
+Review Windows x64, Linux x64/ARM64 and macOS Intel/Apple Silicon without narrowing
+the matrix. Verify seed contents/layout and missing-seed publish failure alongside
+existing runtime/native-library guards. Native popup focus, theme, RTL, tray-only
+operation, suspend/resume and settings cleanup require matching desktop hosts.
+On 2026-11-19, Windows x64 Debug and Release each passed 569 of 576 tests,
+with seven symbolic-link permission skips per configuration; both builds had zero
+errors using .NET SDK 11.0.100. Each reported two NU1900 warnings because the
+NuGet vulnerability service was unreachable, so this was not a completed
+dependency-vulnerability audit. Fresh self-contained publish/payload checks passed
+for all five RIDs, with source-identical seed/guide files, no writable user database
+and seven static native-architecture checks per payload. These cross-publishes do
+not execute Mac/Linux binaries. Native desktop/install checks were not run. Do not
+rebuild or replace published assets. See
+[verification detail](MOVEMENT-BREAKS.md#verification).
 
 ## Release-description review (2026-11-17)
 
@@ -2397,3 +2447,30 @@ Native Windows install/update/uninstall/UAC and macOS/Linux desktop checks remai
 unverified. Native DEB/DMG creation requires matching hosts. Windows is unsigned;
 macOS is unsigned/not notarized. Recording redistribution rights remain
 unverified; retain and review the third-party notices before public distribution.
+
+## Beta.16 preparation (2026-11-21)
+
+Beta.16 adds movement breaks, configurable reading highlights, a shared settings
+backup panel and a factory reset. It keeps the published beta.15 downloads in
+their own versioned folder. See the [beta.16 release description](releases/v1.0.2-beta.16.md)
+for download and startup instructions.
+
+On Windows x64 (build 26300, .NET SDK 11.0.100), the app and test builds reported
+zero warnings/errors. Debug and Release each passed 591 of 598 tests, with seven
+symbolic-link permission skips. This includes Avalonia headless rendering and
+caption coverage for all eight languages, legacy backup reads, reminder and
+profile cleanup regressions, and isolated cross-platform packaging fixtures.
+
+The dependency update aligned Avalonia and Avalonia.Headless at 12.1.6, updated
+SoundFlow, Noda Time, Serilog and xUnit, and moved the development-only
+IconBuilder to SkiaSharp 4.157.0. Avalonia's app runtime still resolves SkiaSharp
+3.119.4. The existing vector artwork was re-exported with the updated tool.
+See [icon provenance](../AthanTime.Net/Assets/ICON.md) and
+[third-party notices](../THIRD-PARTY-NOTICES.md).
+
+Windows Setup and the five self-contained portable ZIPs passed archive
+integrity and native architecture checks. The Windows Setup payload matched the
+284 files common to the Windows portable ZIP. The macOS and Linux ZIPs preserve
+executable launchers and required native runtime, UI, audio and SQLite libraries.
+Native desktop and installer smoke tests remain pending. Windows Setup is
+unsigned and macOS builds are unsigned and lack notarization.

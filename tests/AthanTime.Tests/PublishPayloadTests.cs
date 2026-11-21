@@ -21,10 +21,11 @@ public sealed class PublishPayloadTests
             var files = new[]
             {
                 "Assets/Audio/adhan.ogg", "Assets/Audio/takbeer.ogg",
-                "NVorbis.dll", "Data/locations.db", "Data/desktop-control.json", "Microsoft.Data.Sqlite.dll",
+                "NVorbis.dll", "SoundFlow.dll", "licenses/SOUNDFLOW-LICENSE.md", "licenses/SOUNDFLOW-THIRD-PARTY-NOTICES.txt",
+                "Data/locations.db", "Data/desktop-control.json", "Data/movement-breaks.json", "Microsoft.Data.Sqlite.dll",
                 "System.Private.CoreLib.dll", "AthanTime.Net.runtimeconfig.json", "README.txt",
                 $"{prefix}miniaudio{suffix}", $"{prefix}e_sqlite3{suffix}",
-                $"{prefix}coreclr{suffix}", $"{prefix}hostfxr{suffix}"
+                $"{prefix}coreclr{suffix}", $"{prefix}hostfxr{suffix}", $"libSkiaSharp{suffix}", $"libHarfBuzzSharp{suffix}"
             };
             foreach (var file in files)
             {
@@ -34,7 +35,12 @@ public sealed class PublishPayloadTests
             }
             var passed = await RunGuard(directory, runtime);
             Assert.True(passed.ExitCode == 0, passed.Output);
-            foreach (var missing in new[] { $"{prefix}coreclr{suffix}", $"{prefix}hostfxr{suffix}", $"{prefix}e_sqlite3{suffix}", "Data/desktop-control.json", "README.txt" })
+            foreach (var missing in new[]
+            {
+                $"{prefix}coreclr{suffix}", $"{prefix}hostfxr{suffix}", $"{prefix}e_sqlite3{suffix}",
+                $"libSkiaSharp{suffix}", $"libHarfBuzzSharp{suffix}", "licenses/SOUNDFLOW-THIRD-PARTY-NOTICES.txt",
+                "Data/desktop-control.json", "Data/movement-breaks.json", "README.txt"
+            })
             {
                 var path = Path.Combine(directory, missing);
                 File.Delete(path);

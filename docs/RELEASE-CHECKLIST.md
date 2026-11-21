@@ -8,6 +8,27 @@ under [AGENTS.md](../AGENTS.md#working-rules). Never reuse earlier publication
 authorization for a later description edit or replacement binary.
 The native desktop, signing and recording-rights limits below remain applicable.
 
+The [beta.16 candidate](releases/v1.0.2-beta.16.md) adds movement breaks, central
+backups, reading highlights and a factory reset. Keep beta.15's published assets.
+For dependency updates, compare direct packages against stable NuGet versions,
+review the restored transitive graph and advisories, and check native payloads
+for every supported architecture. Verify availability of the audio licenses
+and run IconBuilder's asset check when its renderer changes.
+Before a separately confirmed release, follow [its verification checklist](MOVEMENT-BREAKS.md#verification)
+for database persistence/failures, exact due/expiry/snooze behavior, priority and
+pause/clock-gap reset, manual-test isolation, all languages/themes and payload
+seed/native-library coverage. Verify the dedicated movement JSON round trip,
+validation/confirmation/no-change failures and stable idea/translation order; prayer-
+settings imports from older backups must retain existing movement data. Check section
+scope rejection, a whole-app round trip including movement, and reading highlights
+for accented and RTL text. Confirm normal uninstall retention
+and explicit current-user cleanup on each OS. Reopen an early development movement
+database without the translation-position column and confirm its settings/custom
+text migrate transactionally without debugger exceptions for absent SQLite sidecars.
+Verify factory-reset cancel and confirm in a disposable account. After confirming,
+relaunch and check first-run location review, default movement ideas, placement and
+login startup. Check that recordings and exported backups are preserved.
+
 Keep public release text short and understandable: useful changes, download/startup
 instructions, supported platforms and essential beta/security caveats. Review it for
 private paths, secrets, owner conversations and unnecessary build/history details.

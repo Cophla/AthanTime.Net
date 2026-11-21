@@ -3,6 +3,10 @@ namespace AthanTime.Net.Models;
 /// <summary>JSON preferences for calculations, per-location corrections and independent prayer/sunrise reminders.</summary>
 public sealed class AppSettings
 {
+    public const int DefaultReadingHighlightSpeed = 8;
+    public const int MinimumReadingHighlightSpeed = 2;
+    public const int MaximumReadingHighlightSpeed = 20;
+
     public int SchemaVersion { get; set; } = 5;
     public string LocationId { get; set; } = "geonames-276781";
     public string Language { get; set; } = "en";
@@ -14,6 +18,8 @@ public sealed class AppSettings
     public HighLatitudeRule HighLatitudeRule { get; set; } = HighLatitudeRule.AngleBased;
     public bool Use24HourClock { get; set; }
     public bool UseDarkMode { get; set; }
+    /// <summary>Number of visible text characters highlighted per second in reading reminders.</summary>
+    public int ReadingHighlightSpeed { get; set; } = DefaultReadingHighlightSpeed;
     public bool StartMinimized { get; set; }
     public bool StartOnLogin { get; set; }
     public bool CloseToTray { get; set; } = true;
@@ -89,7 +95,7 @@ public sealed class AdhkarSettings
 public sealed class TextAdhkarSettings
 {
     public bool Enabled { get; set; }
-    public int DisplaySeconds { get; set; } = 20;
+    public int DisplaySeconds { get; set; } = 5;
     public int PauseMinutes { get; set; } = 30;
     public List<string> Texts { get; set; } = ["سبحان الله", "الحمد لله", "الله أكبر"];
 }

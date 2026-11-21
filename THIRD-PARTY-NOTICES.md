@@ -3,11 +3,11 @@
 All runtime and development dependencies are free to use; the project needs no paid service, API key, or proprietary runtime component.
 
 - Avalonia UI packages: MIT license — <https://github.com/AvaloniaUI/Avalonia>
-- SkiaSharp 3.119.4: MIT license with bundled native third-party notices — <https://github.com/mono/SkiaSharp>. Used by Avalonia and the development-only IconBuilder, which adds no SVG renderer dependency to the application.
+- SkiaSharp: MIT license with bundled native third-party notices — <https://github.com/mono/SkiaSharp>. Avalonia resolves SkiaSharp 3.119.4 for the app. The development-only IconBuilder uses SkiaSharp 4.157.0 and adds no SVG renderer dependency to the app.
 - Inter through `Avalonia.Fonts.Inter`: SIL Open Font License 1.1.
 - Adhan prayer-time library: MIT license — <https://github.com/stankovski/adhan-csharp>
-- Noda Time 3.3.5: Apache-2.0 license — <https://github.com/nodatime/nodatime>. The license ships in `licenses/NODATIME-LICENSE.txt`. Its embedded IANA TZDB supplies offline civil-time and recurring seasonal rules on every OS; IANA time-zone data is public domain (<https://www.iana.org/time-zones>).
-- SoundFlow 1.4.1: MIT license — <https://github.com/LSXPrime/SoundFlow>. Its NuGet package supplies native miniaudio (MIT/Unlicense); its LICENSE.md and SOUNDFLOW-THIRD-PARTY-NOTICES.txt are copied to `licenses/` in build and publish output. No optional FFmpeg or MIDI extensions are used.
+- Noda Time 3.3.7: Apache-2.0 license — <https://github.com/nodatime/nodatime>. The license ships in `licenses/NODATIME-LICENSE.txt`. Its embedded IANA TZDB supplies offline civil-time and recurring seasonal rules on every OS; IANA time-zone data is public domain (<https://www.iana.org/time-zones>).
+- SoundFlow 1.4.2: MIT license — <https://github.com/LSXPrime/SoundFlow>. Its NuGet package supplies native miniaudio (MIT/Unlicense); its LICENSE.md and SOUNDFLOW-THIRD-PARTY-NOTICES.txt are copied to `licenses/` in build and publish output. No optional FFmpeg or MIDI extensions are used.
 - Microsoft.Extensions hosting, configuration, logging, and dependency injection: MIT license — <https://github.com/dotnet/runtime>
 - Microsoft.Data.Sqlite 11.0.0: MIT license — <https://github.com/dotnet/efcore>. SQLitePCLRaw 3.0.5: Apache-2.0 — <https://github.com/ericsink/SQLitePCL.raw>. Its default bundle uses the public NuGet package SQLite 3.53.4 for native `e_sqlite3` on Windows, Linux and macOS; no system SQLite, paid build service or account is needed. SQLite is public domain — <https://sqlite.org/copyright.html>. The provider, wrapper and native-library notices ship in `licenses/SQLITE-NOTICES.txt`.
 - Serilog and its file/configuration/hosting integrations: Apache-2.0 license — <https://github.com/serilog/serilog>

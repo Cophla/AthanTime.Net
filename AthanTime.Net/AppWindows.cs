@@ -106,6 +106,48 @@ public sealed class PrayerNotificationWindow : AppWindow
     }
 }
 
+/// <summary>A non-activating movement suggestion with the shared theme and app-clock lifetime.</summary>
+public sealed class MovementBreakWindow : AppWindow
+{
+    /// <summary>Shows one original or user-written instruction with a reading accent.</summary>
+    public MovementBreakWindow(MainViewModel viewModel, string text) : base(viewModel)
+    {
+        Width = 440; Height = 340; MinWidth = 260; MinHeight = 220;
+        ShowActivated = false; ShowInTaskbar = false; Topmost = true;
+        this.Bind(TitleProperty, new Binding("[MovementPopupTitle]"));
+        var title = new TextBlock { Classes = { "section" } };
+        title.Bind(TextBlock.TextProperty, new Binding("[MovementPopupTitle]"));
+        var instruction = new ReadingHighlight(this, text, 22, "MovementText", viewModel.ReadingHighlightSpeed);
+        var safety = new TextBlock { Classes = { "caption" }, TextWrapping = TextWrapping.Wrap };
+        safety.Bind(TextBlock.TextProperty, new Binding("[MovementSafety]"));
+        var done = new Button { Name = "MovementDoneButton", Margin = new Thickness(0, 4, 8, 4) };
+        done.Bind(ContentControl.ContentProperty, new Binding("[MovementDismiss]"));
+        done.Click += (_, _) => { viewModel.DismissMovementBreak(); Close(); };
+        var snooze = new Button { Name = "MovementSnoozeButton", Margin = new Thickness(0, 4, 8, 4) };
+        snooze.Bind(ContentControl.ContentProperty, new Binding("[MovementSnooze]"));
+        snooze.Click += (_, _) => { viewModel.SnoozeMovementBreak(); Close(); };
+        var content = new StackPanel { Spacing = 12, Children = { title, instruction, safety } };
+        var panel = new Grid { RowDefinitions = RowDefinitions.Parse("*,Auto"), RowSpacing = 10 };
+        panel.Children.Add(new ScrollViewer { Content = content });
+        var buttons = new WrapPanel { Children = { done, snooze } };
+        Grid.SetRow(buttons, 1); panel.Children.Add(buttons);
+        SetBody(panel, scroll: false);
+        Opened += (_, _) =>
+        {
+            if (Screens.ScreenFromWindow(this) is not { } screen) return;
+            var area = screen.WorkingArea;
+            var scale = DesktopScaling > 0 ? DesktopScaling : 1;
+            // Leave room for native decorations; fit rather than force a minimum off-screen.
+            var width = Math.Max(1, area.Width / scale - 40);
+            var height = Math.Max(1, area.Height / scale - 80);
+            MinWidth = Math.Min(MinWidth, width); MinHeight = Math.Min(MinHeight, height);
+            Width = Math.Min(Width, width); Height = Math.Min(Height, height);
+            Position = new PixelPoint(area.Right - (int)((Width + 20) * scale),
+                area.Bottom - (int)((Height + 60) * scale));
+        };
+    }
+}
+
 /// <summary>A small non-activating reading window; the view-model timer owns its lifetime.</summary>
 public sealed class TextAdhkarWindow : AppWindow
 {
@@ -126,11 +168,8 @@ public sealed class TextAdhkarWindow : AppWindow
         var panel = new Grid { RowDefinitions = RowDefinitions.Parse("*,Auto"), RowSpacing = 12 };
         panel.Children.Add(new ScrollViewer
         {
-            Content = new TextBlock
-            {
-                Text = text, FontSize = 24, TextWrapping = TextWrapping.Wrap,
-                FlowDirection = ReadingDirection(text), VerticalAlignment = VerticalAlignment.Center
-            }
+            Content = new ReadingHighlight(this, text, 24, "AdhkarReadingText", viewModel.ReadingHighlightSpeed)
+            { VerticalAlignment = VerticalAlignment.Center }
         });
         Grid.SetRow(dismiss, 1);
         panel.Children.Add(dismiss);

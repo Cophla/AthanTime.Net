@@ -51,8 +51,11 @@ public sealed class UserProfileCleanupTests
             var profile = Directory.CreateDirectory(Path.Combine(directory.FullName, "user-a"));
             var other = Path.Combine(directory.FullName, "user-b-settings.json");
             File.WriteAllText(other, "keep");
-            foreach (var name in new[] { "settings.json", "settings.json.bak", "settings.json.tmp", "settings.json.bak.tmp", "window-position.json", "window-position.json.tmp" })
+            var ownedNames = new[] { "settings.json", "settings.json.bak", "settings.json.tmp", "settings.json.bak.tmp", "window-position.json", "window-position.json.tmp",
+                "movement-reminders.db", "movement-reminders.db-journal", "movement-reminders.db-wal", "movement-reminders.db-shm" };
+            foreach (var name in ownedNames)
                 File.WriteAllText(Path.Combine(profile.FullName, name), "owned");
+            File.WriteAllText(Path.Combine(profile.FullName, "personal.db"), "keep");
             Directory.CreateDirectory(Path.Combine(profile.FullName, "Logs"));
             File.WriteAllText(Path.Combine(profile.FullName, "Logs", "athan-20261115.log"), "owned");
             File.WriteAllText(Path.Combine(profile.FullName, "Logs", "other.log"), "keep");
@@ -63,6 +66,8 @@ public sealed class UserProfileCleanupTests
             Assert.Equal(UserProfileCleanupResult.Success, cleanup.Remove());
             Assert.False(startup.IsEnabled());
             Assert.False(File.Exists(Path.Combine(profile.FullName, "settings.json")));
+            Assert.All(ownedNames, name => Assert.False(File.Exists(Path.Combine(profile.FullName, name))));
+            Assert.Equal("keep", File.ReadAllText(Path.Combine(profile.FullName, "personal.db")));
             Assert.False(File.Exists(Path.Combine(profile.FullName, "Logs", "athan-20261115.log")));
             Assert.Equal("keep", File.ReadAllText(other));
             Assert.Equal("keep", File.ReadAllText(Path.Combine(profile.FullName, "recording.ogg")));
@@ -113,6 +118,33 @@ public sealed class UserProfileCleanupTests
             Assert.Equal("keep", File.ReadAllText(Path.Combine(profile.FullName, "settings.json")));
             Assert.Equal("keep", File.ReadAllText(Path.Combine(target.FullName, "athan-other.log")));
             Directory.Delete(Path.Combine(profile.FullName, "Logs"));
+        }
+        finally { directory.Delete(true); }
+    }
+
+    [Theory]
+    [InlineData("movement-reminders.db")]
+    [InlineData("movement-reminders.db-journal")]
+    [InlineData("movement-reminders.db-wal")]
+    [InlineData("movement-reminders.db-shm")]
+    public void LinkedMovementDatabaseFilesAreRejectedBeforeAnyProfileDeletion(string name)
+    {
+        var directory = Directory.CreateTempSubdirectory("athan-cleanup-movement-link-");
+        try
+        {
+            var profile = Directory.CreateDirectory(Path.Combine(directory.FullName, "profile"));
+            var target = Path.Combine(directory.FullName, "external.db");
+            File.WriteAllText(target, "keep");
+            File.WriteAllText(Path.Combine(profile.FullName, "settings.json"), "keep");
+            var link = Path.Combine(profile.FullName, name);
+            try { File.CreateSymbolicLink(link, target); }
+            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+            { Assert.Skip("Symbolic-link creation requires native permissions."); return; }
+            Assert.Equal(UserProfileCleanupResult.LinkedPath,
+                new UserProfileCleanup(profile.FullName, new FakeLoginStartupService(), NullLogger<UserProfileCleanup>.Instance).Remove());
+            Assert.Equal("keep", File.ReadAllText(target));
+            Assert.Equal("keep", File.ReadAllText(Path.Combine(profile.FullName, "settings.json")));
+            File.Delete(link);
         }
         finally { directory.Delete(true); }
     }

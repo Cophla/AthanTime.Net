@@ -22,6 +22,9 @@ public partial class MainWindow : Window
     private FileLogSink? _fileLogs;
     private bool _emailBusy;
     private bool _settingsTransferBusy;
+    private readonly UserProfileCleanup? _profileCleanup;
+    private readonly SingleInstanceGuard? _instance;
+    private bool _profileReset;
     private readonly WindowPositionService? _windowPositions;
     private WindowPosition? _normalPosition;
     private WindowPosition? _savedPosition;
@@ -69,10 +72,13 @@ public partial class MainWindow : Window
 
     /// <summary>Creates the runtime window with device-local placement, log export and email draft services.</summary>
     public MainWindow(MainViewModel viewModel, ILogger<MainWindow> logger, SupportService support,
-        FileLogSink fileLogs, WindowPositionService positions) : this(viewModel, logger, positions)
+        FileLogSink fileLogs, WindowPositionService positions, UserProfileCleanup profileCleanup,
+        SingleInstanceGuard? instance = null) : this(viewModel, logger, positions)
     {
         _support = support;
         _fileLogs = fileLogs;
+        _profileCleanup = profileCleanup;
+        _instance = instance;
     }
 
     /// <summary>Gets the dependency-injected main view model.</summary>
@@ -89,8 +95,23 @@ public partial class MainWindow : Window
     {
         startMinimized &= !showWindow;
         if (!startMinimized) return;
+        if (CanHideToTray && ViewModel.CloseToTray)
+        {
+            WindowState = WindowState.Minimized;
+            Opened += HideAfterStartup;
+            return;
+        }
+
+        // X11/XWayland can ignore iconify before the window is shown. Keep its taskbar entry.
+        ShowActivated = false;
+        Opened += MinimizeAfterStartup;
+    }
+
+    private void MinimizeAfterStartup(object? sender, EventArgs args)
+    {
+        Opened -= MinimizeAfterStartup;
         WindowState = WindowState.Minimized;
-        if (CanHideToTray && ViewModel.CloseToTray) Opened += HideAfterStartup;
+        ShowActivated = true;
     }
 
     private void HideAfterStartup(object? sender, EventArgs args)
@@ -252,12 +273,59 @@ public partial class MainWindow : Window
 
     private void SaveWindowPosition()
     {
+        if (_profileReset) return;
         CaptureNormalPosition();
         if (_normalPosition is { } normal && normal != _savedPosition && _windowPositions!.Save(normal))
             _savedPosition = normal;
     }
 
     private async void OnExit(object? sender, RoutedEventArgs args) => await RequestExitAsync();
+
+    private async void OnResetProfile(object? sender, RoutedEventArgs args)
+    {
+        if (_settingsTransferBusy || _exitDialogOpen || _emailBusy || _profileCleanup is null) return;
+        _settingsTransferBusy = true;
+        try
+        {
+            if (!await ConfirmSettingsActionAsync("ResetProfile", "ResetProfileConfirm", "ResetProfile")) return;
+            if (!TryResetProfile())
+            {
+                await ShowInformationAsync(ViewModel["ResetProfile"], ViewModel["ResetProfileFailed"]);
+                return;
+            }
+
+            _profileReset = true;
+            ForceClose = true;
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.Shutdown();
+            else Close();
+        }
+        finally { _settingsTransferBusy = false; }
+    }
+
+    private bool TryResetProfile()
+    {
+        var restoreLogging = false;
+        try
+        {
+            // Debug runs may coexist with Release. Refuse reset while Release owns the profile.
+            using var lease = _instance is { HoldsLease: false } ? SingleInstanceGuard.TryAcquire() : null;
+            if (_instance is { HoldsLease: false } && lease is null) return false;
+            restoreLogging = _fileLogs?.Enabled == true;
+            _fileLogs?.Dispose();
+            if (_profileCleanup!.Remove() == UserProfileCleanupResult.Success) return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            _logger.LogWarning(exception, "Could not reset the current profile");
+        }
+        if (restoreLogging)
+        {
+            try { _fileLogs!.SetEnabled(true); }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            { _logger.LogWarning(exception, "Could not reopen the log after a reset failure"); }
+        }
+        return false;
+    }
 
     /// <summary>Asks before an explicit exit; a normal close-to-tray action does not exit.</summary>
     public async Task RequestExitAsync()
@@ -310,6 +378,11 @@ public partial class MainWindow : Window
     private async void OnTestPrayerReminder(object? sender, RoutedEventArgs args) => await ViewModel.TestPrayerReminderAsync();
     private async void OnTestAdhkarAudio(object? sender, RoutedEventArgs args) => await ViewModel.TestAdhkarAudioAsync();
     private void OnTestTextAdhkar(object? sender, RoutedEventArgs args) => ViewModel.TestTextAdhkar();
+    private void OnAddMovementPractice(object? sender, RoutedEventArgs args) => ViewModel.AddMovementPractice();
+    private void OnUpdateMovementPractice(object? sender, RoutedEventArgs args) => ViewModel.UpdateMovementPractice();
+    private void OnRemoveMovementPractice(object? sender, RoutedEventArgs args) => ViewModel.RemoveMovementPractice();
+    private void OnTestMovementBreak(object? sender, RoutedEventArgs args) => ViewModel.TestMovementBreak();
+    private void OnReloadMovementBreaks(object? sender, RoutedEventArgs args) => ViewModel.ReloadMovementBreaks();
     private async void OnPlayBundledAthan(object? sender, RoutedEventArgs args) =>
         await ViewModel.PreviewAudioAsync("bundled:adhan");
     private async void OnPreviewAdhkar(object? sender, RoutedEventArgs args) => await ViewModel.PreviewAudioAsync(ViewModel.SelectedAdhkarFile);
@@ -398,20 +471,25 @@ public partial class MainWindow : Window
 
     private async void OnComplaint(object? sender, RoutedEventArgs args) => await OpenEmailAsync(SupportMessage.Complaint);
 
+    private string SelectedBackupScope =>
+        (this.FindControl<ComboBox>("SettingsBackupScope")?.SelectedItem as ComboBoxItem)?.Tag as string ?? "All";
+
     private async void OnExportSettings(object? sender, RoutedEventArgs args)
     {
+        var section = SelectedBackupScope;
         if (_settingsTransferBusy) return;
         _settingsTransferBusy = true;
         try
         {
             using var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = ViewModel["ExportSettings"], SuggestedFileName = "AthanTime-settings.json", DefaultExtension = "json",
+                Title = ViewModel["ExportSettings"], SuggestedFileName = $"AthanTime-settings-{section}.json", DefaultExtension = "json",
                 FileTypeChoices = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }], ShowOverwritePrompt = true
             });
             if (file is null) return;
             var path = file.TryGetLocalPath() ?? throw new IOException("A local settings file is required.");
-            var exported = ViewModel.ExportSettings(path);
+            var exported = section == "MovementBreaks" ? ViewModel.ExportMovementBreaks(path)
+                : ViewModel.ExportSettingsBackup(section, path);
             await ShowInformationAsync(ViewModel["ExportSettings"], ViewModel[exported ? "SettingsExported" : "SettingsExportFailed"]);
         }
         catch (Exception exception)
@@ -424,6 +502,7 @@ public partial class MainWindow : Window
 
     private async void OnImportSettings(object? sender, RoutedEventArgs args)
     {
+        var section = SelectedBackupScope;
         if (_settingsTransferBusy) return;
         _settingsTransferBusy = true;
         try
@@ -438,15 +517,28 @@ public partial class MainWindow : Window
             try { path = files[0].TryGetLocalPath(); }
             finally { foreach (var file in files) file.Dispose(); }
             if (path is null) throw new IOException("A local settings file is required.");
-            var imported = ViewModel.ReadSettingsImport(path);
+            if (section == "MovementBreaks")
+            {
+                var movement = ViewModel.ReadMovementBreaksImport(path);
+                if (movement is null)
+                    await ShowInformationAsync(ViewModel["ImportSettings"], ViewModel["SettingsImportFailed"]);
+                else if (await ConfirmSettingsActionAsync("MovementBreaks", "MovementImportConfirm"))
+                {
+                    var restored = ViewModel.ApplyImportedMovementBreaks(movement);
+                    await ShowInformationAsync(ViewModel["ImportSettings"], ViewModel[restored ? "MovementImported" : "SettingsSaveFailed"]);
+                }
+                return;
+            }
+            var imported = ViewModel.ReadSettingsBackup(section, path);
             if (imported is null)
             {
                 await ShowInformationAsync(ViewModel["ImportSettings"], ViewModel["SettingsImportFailed"]);
                 return;
             }
-            if (!await ConfirmImportAsync()) return;
-            ViewModel.ApplyImportedSettings(imported);
-            await ShowInformationAsync(ViewModel["ImportSettings"], ViewModel.SettingsStatus);
+            var title = imported.Section switch { "All" => "SettingsAllBackup", "PrayerReminders" => "Notifications", _ => imported.Section };
+            if (!await ConfirmSettingsActionAsync(title, imported.Section == "All" ? "SettingsImportConfirm" : "SettingsSectionImportConfirm")) return;
+            var applied = ViewModel.ApplySettingsBackup(imported);
+            await ShowInformationAsync(ViewModel["ImportSettings"], applied ? ViewModel.SettingsStatus : ViewModel["SettingsSaveFailed"]);
         }
         catch (Exception exception)
         {
@@ -456,20 +548,20 @@ public partial class MainWindow : Window
         finally { _settingsTransferBusy = false; }
     }
 
-    private Task<bool> ConfirmImportAsync()
+    private Task<bool> ConfirmSettingsActionAsync(string titleKey, string messageKey, string confirmKey = "ImportSettings")
     {
         var dialog = new AppWindow(ViewModel)
         {
-            Title = ViewModel["ImportSettings"], Width = 520, Height = 400,
+            Title = ViewModel[titleKey], Width = 520, Height = 400,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         };
         var cancel = new Button { Content = ViewModel["Cancel"], MinWidth = 110 };
-        var apply = new Button { Content = ViewModel["ImportSettings"], MinWidth = 110 };
+        var apply = new Button { Content = ViewModel[confirmKey], MinWidth = 110 };
         var buttons = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right };
         cancel.Margin = new Thickness(6); apply.Margin = new Thickness(6);
         buttons.Children.Add(cancel); buttons.Children.Add(apply);
         var panel = new StackPanel { Spacing = 22 };
-        panel.Children.Add(new TextBlock { Text = ViewModel["SettingsImportConfirm"], TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new TextBlock { Text = ViewModel[messageKey], TextWrapping = TextWrapping.Wrap });
         panel.Children.Add(buttons);
         dialog.SetBody(panel);
         cancel.Click += (_, _) => dialog.Close(false);

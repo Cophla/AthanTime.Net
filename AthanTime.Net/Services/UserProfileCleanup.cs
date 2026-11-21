@@ -17,7 +17,7 @@ public enum UserProfileCleanupResult
     AccessDenied = 6
 }
 
-/// <summary>Removes only app-owned current-user preferences after explicit uninstall/helper consent.</summary>
+/// <summary>Removes only app-owned current-user files after explicit factory-reset or uninstall consent.</summary>
 public sealed class UserProfileCleanup(string directory, ILoginStartupService loginStartup, ILogger<UserProfileCleanup> logger)
 {
     /// <summary>Disables current-user login startup and deletes known profile files; recordings and other users are untouched.</summary>
@@ -27,18 +27,23 @@ public sealed class UserProfileCleanup(string directory, ILoginStartupService lo
         {
             if (!Path.IsPathFullyQualified(directory)) return UserProfileCleanupResult.InvalidProfilePath;
             var root = Path.GetFullPath(directory);
-            var logs = Path.Combine(root, "Logs");
-            if (IsLink(root) || IsLink(logs)) return RefuseLink();
-            var files = new[] { "settings.json", "settings.json.bak", "settings.json.tmp", "settings.json.bak.tmp",
-                "window-position.json", "window-position.json.tmp" }.Select(name => Path.Combine(root, name)).ToList();
-            if (Directory.Exists(logs)) files.AddRange(Directory.EnumerateFiles(logs, "athan-*.log", SearchOption.TopDirectoryOnly));
+            var logDirectories = OperatingSystem.IsWindows() ? new[] { Path.Combine(root, "Logs") }
+                : new[] { Path.Combine(root, "Logs"), Path.Combine(root, "logs") };
+            if (IsLink(root) || logDirectories.Any(IsLink)) return RefuseLink();
+            var files = new[] { "settings.json.bak", "settings.json.tmp", "settings.json.bak.tmp",
+                "window-position.json", "window-position.json.tmp", "movement-reminders.db", "movement-reminders.db-journal",
+                "movement-reminders.db-wal", "movement-reminders.db-shm" }.Select(name => Path.Combine(root, name)).ToList();
+            foreach (var logs in logDirectories)
+                if (Directory.Exists(logs)) files.AddRange(Directory.EnumerateFiles(logs, "athan-*.log", SearchOption.TopDirectoryOnly));
+            // Remove the primary settings file last so an earlier failure keeps the active settings.
+            files.Add(Path.Combine(root, "settings.json"));
             // Validate before deleting anything; never traverse linked profile/log locations.
             if (files.Any(IsLink)) return RefuseLink();
             if (files.Any(Directory.Exists)) throw new IOException("An owned profile file path is a directory.");
             loginStartup.SetEnabled(false);
             foreach (var file in files)
                 if (Path.Exists(file)) File.Delete(file);
-            RemoveIfEmpty(logs);
+            foreach (var logs in logDirectories) RemoveIfEmpty(logs);
             RemoveIfEmpty(root);
             logger.LogInformation("Removed app-owned current-user settings; unrelated files retained");
             return UserProfileCleanupResult.Success;

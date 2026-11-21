@@ -114,7 +114,7 @@ public sealed class ReminderPreviewTests(UiTestHost ui, ViewModelHarness harness
         {
             window.Show();
             window.FindControl<TabControl>("MainPages")!.SelectedIndex = 1;
-            window.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 2;
+            window.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 3;
             string[] names = ["TestPrayerReminderButton", "TestAdhkarAudioButton", "TestTextAdhkarButton"];
             var expected = new Dictionary<string, string>
             {

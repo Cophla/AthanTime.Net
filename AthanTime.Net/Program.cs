@@ -159,10 +159,15 @@ public partial class Program
                 services.AddSingleton<Random>(_ => Random.Shared);
                 services.AddSingleton<TextAdhkarScheduler>();
                 services.AddSingleton<DefaultAdhkarRepository>();
+                services.AddSingleton<IMovementBreakRepository>(_ => new MovementBreakRepository(
+                    Path.Combine(appDataDirectory, "movement-reminders.db"),
+                    Path.Combine(AppContext.BaseDirectory, "Data", "movement-breaks.json")));
                 services.AddSingleton<LoggingLevelSwitch>();
                 services.AddSingleton<FileLogSink>(_ => new FileLogSink(appDataDirectory));
                 services.AddSingleton<LoggingLevelController>();
                 services.AddSingleton<ILoginStartupService, LoginStartupService>();
+                services.AddSingleton<UserProfileCleanup>(provider => new UserProfileCleanup(appDataDirectory,
+                    provider.GetRequiredService<ILoginStartupService>(), provider.GetRequiredService<ILogger<UserProfileCleanup>>()));
                 services.AddSingleton<SupportService>();
                 services.AddSingleton<WindowPositionService>(provider => new WindowPositionService(
                     provider.GetRequiredService<ILogger<WindowPositionService>>(),

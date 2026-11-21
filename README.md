@@ -5,13 +5,13 @@ macOS and Linux.
 
 [Project website](https://github.com/Cophla/AthanTime.Net) · [Releases and downloads](https://github.com/Cophla/AthanTime.Net/releases)
 
-**Version: 1.0.2-beta.15 — Beta**
+**Version: 1.0.2-beta.16 — Beta candidate**
 
 ## Technology
 
 - **C# and .NET 11** — application development.
 - **Avalonia** — desktop interface for Windows, macOS and Linux.
-- **SQLite** — offline city search.
+- **SQLite** — offline city search and local movement-break data.
 - Built with free, open-source technologies.
 
 ## Requirements
@@ -43,6 +43,13 @@ Choose the download that matches your computer:
 - **Fits your screen:** adjusts the window for the monitor's available space and display scaling.
 - **Convenient daily use:** system-tray access where available, optional startup at login and settings backup/import/export.
 
+In beta.16, open Settings > General to back up all settings or choose one
+section, including Movement breaks.
+
+To start over, choose **Restore factory settings** in General. After confirmation
+the app closes. Open it again for first-run setup. Exported backups and your
+recordings are kept.
+
 ## Getting started
 
 1. Download the matching file from [Releases and downloads](https://github.com/Cophla/AthanTime.Net/releases).
@@ -52,13 +59,22 @@ Choose the download that matches your computer:
 Every portable download includes [README.txt](packaging/README.txt).
 Mac/Linux packages also include START-HERE.txt. On Mac, open Athan Time.app;
 on Linux, use the included launcher. See the
-[release description](docs/releases/v1.0.2-beta.15.md#release-description).
+[beta.16 release description](docs/releases/v1.0.2-beta.16.md#release-description).
 
 On first launch, confirm or change the suggested city before reminders start.
 When updating, use Windows Setup or quit the app before replacing Mac/Linux files.
 Uninstall keeps settings by default; optional settings removal is explained in the
 included README. Windows uninstall confirms when removal succeeds.
 Calculated prayer times may differ from your local mosque's timetable.
+
+## Movement breaks
+
+Optional movement breaks remind you to step away from the screen. Set the timing,
+try a reminder, and add or translate your own ideas in Settings > Movement breaks.
+The feature works offline, reuses the app's existing clock to stay lightweight,
+keeps its ideas in a local SQLite database, and has a separate JSON backup for
+its timing, ideas and translations. See
+[movement-break help](docs/MOVEMENT-BREAKS.md).
 
 ## Beta status
 

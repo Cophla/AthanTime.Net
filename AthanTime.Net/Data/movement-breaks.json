@@ -1,0 +1,106 @@
+[
+  {
+    "id": "walk",
+    "texts": {
+      "en": "If you can, stand up and take a short, easy walk. Choose a clear, safe space.",
+      "ar": "إن استطعت، قف وامشِ قليلًا بهدوء. اختر مكانًا آمنًا وخاليًا من العوائق.",
+      "fr": "Si vous le pouvez, levez-vous et faites quelques pas tranquillement. Choisissez un espace sûr et dégagé.",
+      "es": "Si puedes, levántate y camina un poco sin prisa. Elige un espacio seguro y despejado.",
+      "tr": "Yapabiliyorsanız ayağa kalkıp kısa ve rahat bir yürüyüş yapın. Güvenli ve engelsiz bir alan seçin.",
+      "de": "Wenn möglich, stehen Sie auf und gehen Sie ein paar Schritte in Ruhe. Wählen Sie einen sicheren, freien Bereich.",
+      "id": "Jika memungkinkan, berdirilah dan berjalan santai sebentar. Pilih tempat yang aman dan bebas hambatan.",
+      "ur": "اگر ممکن ہو تو کھڑے ہوں اور تھوڑی دیر آرام سے چلیں۔ محفوظ اور رکاوٹوں سے خالی جگہ منتخب کریں۔"
+    }
+  },
+  {
+    "id": "eyes",
+    "texts": {
+      "en": "Look away from the screen at something farther away. Blink naturally and let your eyes rest.",
+      "ar": "انظر بعيدًا عن الشاشة إلى شيء أبعد. ارمش بشكل طبيعي وأرح عينيك.",
+      "fr": "Détournez le regard de l'écran vers un objet plus éloigné. Clignez naturellement des yeux et laissez-les se reposer.",
+      "es": "Aparta la vista de la pantalla y mira algo más lejano. Parpadea con naturalidad y descansa los ojos.",
+      "tr": "Ekrandan uzağa, daha uzaktaki bir nesneye bakın. Doğal şekilde göz kırpın ve gözlerinizi dinlendirin.",
+      "de": "Schauen Sie vom Bildschirm weg auf etwas weiter Entferntes. Blinzeln Sie natürlich und gönnen Sie Ihren Augen Ruhe.",
+      "id": "Alihkan pandangan dari layar ke sesuatu yang lebih jauh. Berkediplah secara alami dan istirahatkan mata.",
+      "ur": "اسکرین سے نظر ہٹا کر کسی دور کی چیز کو دیکھیں۔ معمول کے مطابق پلکیں جھپکائیں اور آنکھوں کو آرام دیں۔"
+    }
+  },
+  {
+    "id": "shoulders",
+    "texts": {
+      "en": "Pause typing. Let your shoulders drop into a relaxed position and rest your arms comfortably.",
+      "ar": "توقف قليلًا عن الكتابة. أرخِ كتفيك واترك ذراعيك في وضع مريح.",
+      "fr": "Faites une pause dans la frappe. Relâchez les épaules et posez les bras confortablement.",
+      "es": "Deja de escribir un momento. Relaja los hombros y apoya los brazos cómodamente.",
+      "tr": "Yazmaya ara verin. Omuzlarınızı gevşetin ve kollarınızı rahat bir konumda dinlendirin.",
+      "de": "Unterbrechen Sie das Tippen. Lassen Sie die Schultern locker und legen Sie die Arme bequem ab.",
+      "id": "Berhenti mengetik sejenak. Rilekskan bahu dan istirahatkan lengan dalam posisi nyaman.",
+      "ur": "کچھ دیر ٹائپ کرنا روک دیں۔ کندھوں کو ڈھیلا چھوڑیں اور بازوؤں کو آرام دہ حالت میں رکھیں۔"
+    }
+  },
+  {
+    "id": "neck",
+    "texts": {
+      "en": "Keep your shoulders relaxed. If comfortable, slowly turn your head a little to each side. Stop if it hurts; never force the movement.",
+      "ar": "أبقِ كتفيك مسترخيين. إن كان ذلك مريحًا، أدر رأسك ببطء قليلًا إلى كل جانب. توقف إن شعرت بألم، ولا تُجبر الحركة.",
+      "fr": "Gardez les épaules détendues. Si cela reste confortable, tournez lentement et légèrement la tête de chaque côté. Arrêtez si cela fait mal, sans jamais forcer.",
+      "es": "Mantén los hombros relajados. Si te resulta cómodo, gira la cabeza despacio un poco hacia cada lado. Detente si duele y no fuerces el movimiento.",
+      "tr": "Omuzlarınızı gevşek tutun. Rahatsanız başınızı yavaşça ve hafifçe iki yana çevirin. Ağrı olursa durun; hareketi asla zorlamayın.",
+      "de": "Lassen Sie die Schultern locker. Wenn es angenehm ist, drehen Sie den Kopf langsam ein wenig zu jeder Seite. Bei Schmerzen aufhören und nichts erzwingen.",
+      "id": "Rilekskan bahu. Jika terasa nyaman, putar kepala perlahan sedikit ke setiap sisi. Berhenti jika sakit dan jangan memaksakan gerakan.",
+      "ur": "کندھے ڈھیلے رکھیں۔ اگر آرام دہ ہو تو سر کو آہستہ سے تھوڑا سا دونوں طرف موڑیں۔ درد ہو تو رک جائیں اور حرکت پر زور نہ دیں۔"
+    }
+  },
+  {
+    "id": "hands",
+    "texts": {
+      "en": "Take your hands off the keyboard and mouse. Gently open and relax your fingers without forcing them.",
+      "ar": "أبعد يديك عن لوحة المفاتيح والفأرة. افتح أصابعك وأرخِها برفق دون إجبارها.",
+      "fr": "Retirez les mains du clavier et de la souris. Ouvrez puis relâchez doucement les doigts, sans forcer.",
+      "es": "Retira las manos del teclado y del ratón. Abre y relaja los dedos suavemente, sin forzarlos.",
+      "tr": "Ellerinizi klavye ve fareden çekin. Parmaklarınızı zorlamadan yavaşça açıp gevşetin.",
+      "de": "Nehmen Sie die Hände von Tastatur und Maus. Öffnen und entspannen Sie die Finger vorsichtig, ohne sie zu überdehnen.",
+      "id": "Lepaskan tangan dari papan ketik dan tetikus. Buka dan rilekskan jari dengan lembut tanpa memaksanya.",
+      "ur": "ہاتھ کی بورڈ اور ماؤس سے ہٹا لیں۔ انگلیوں کو زور دیے بغیر نرمی سے کھولیں اور آرام دیں۔"
+    }
+  },
+  {
+    "id": "posture",
+    "texts": {
+      "en": "Change to a comfortable position. Rest your feet on a stable support and let the chair support your back.",
+      "ar": "غيّر جلستك إلى وضع مريح. ضع قدميك على سطح ثابت واترك الكرسي يسند ظهرك.",
+      "fr": "Adoptez une position confortable. Posez les pieds sur un support stable et laissez le dossier soutenir votre dos.",
+      "es": "Cambia a una postura cómoda. Apoya los pies en una superficie estable y deja que el respaldo sostenga tu espalda.",
+      "tr": "Rahat bir konuma geçin. Ayaklarınızı sağlam bir desteğe koyun ve sırtınızı sandalyenin arkalığına yaslayın.",
+      "de": "Wechseln Sie in eine bequeme Position. Stellen Sie die Füße auf eine stabile Unterlage und lassen Sie die Rückenlehne Ihren Rücken stützen.",
+      "id": "Ubah posisi agar nyaman. Letakkan kaki pada penopang yang stabil dan biarkan sandaran kursi menyangga punggung.",
+      "ur": "آرام دہ انداز میں بیٹھیں۔ پاؤں کو مضبوط سہارے پر رکھیں اور کرسی کی پشت سے اپنی کمر کو سہارا دیں۔"
+    }
+  },
+  {
+    "id": "breathing",
+    "texts": {
+      "en": "Pause for a quiet moment. Breathe naturally, relax your jaw, and rest your hands.",
+      "ar": "توقف للحظة هادئة. تنفس بشكل طبيعي، وأرخِ فكك وأرح يديك.",
+      "fr": "Accordez-vous un moment de calme. Respirez naturellement, relâchez la mâchoire et reposez les mains.",
+      "es": "Haz una pausa tranquila. Respira con naturalidad, relaja la mandíbula y descansa las manos.",
+      "tr": "Kısa ve sakin bir mola verin. Doğal şekilde nefes alın, çenenizi gevşetin ve ellerinizi dinlendirin.",
+      "de": "Gönnen Sie sich einen ruhigen Moment. Atmen Sie natürlich, entspannen Sie den Kiefer und lassen Sie die Hände ruhen.",
+      "id": "Berhentilah sejenak dengan tenang. Bernapaslah secara alami, rilekskan rahang, dan istirahatkan tangan.",
+      "ur": "کچھ دیر سکون سے رکیں۔ معمول کے مطابق سانس لیں، جبڑے کو ڈھیلا چھوڑیں اور ہاتھوں کو آرام دیں۔"
+    }
+  },
+  {
+    "id": "legs",
+    "texts": {
+      "en": "If comfortable, gently move your feet and ankles while seated, or change your leg position. Keep a stable support.",
+      "ar": "إن كان ذلك مريحًا، حرّك قدميك وكاحليك برفق وأنت جالس، أو غيّر وضع ساقيك. حافظ على سند ثابت.",
+      "fr": "Si cela reste confortable, bougez doucement les pieds et les chevilles en position assise, ou changez la position des jambes. Gardez un appui stable.",
+      "es": "Si te resulta cómodo, mueve suavemente los pies y los tobillos mientras estás sentado, o cambia la posición de las piernas. Mantén un apoyo estable.",
+      "tr": "Rahatsanız otururken ayaklarınızı ve ayak bileklerinizi hafifçe hareket ettirin veya bacaklarınızın konumunu değiştirin. Sağlam bir desteğiniz olsun.",
+      "de": "Wenn es angenehm ist, bewegen Sie im Sitzen vorsichtig Füße und Knöchel oder ändern Sie die Beinstellung. Achten Sie auf stabilen Halt.",
+      "id": "Jika terasa nyaman, gerakkan kaki dan pergelangan kaki dengan lembut saat duduk, atau ubah posisi kaki. Pastikan tumpuan tetap stabil.",
+      "ur": "اگر آرام دہ ہو تو بیٹھے ہوئے پاؤں اور ٹخنوں کو نرمی سے حرکت دیں یا ٹانگوں کی حالت بدلیں۔ مضبوط سہارا برقرار رکھیں۔"
+    }
+  }
+]

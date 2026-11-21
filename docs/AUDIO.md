@@ -59,7 +59,7 @@ As with any desktop program, an OS-mounted remote folder can appear as a local p
 
 ## Package choice and platform requirements
 
-[SoundFlow 1.4.1](https://www.nuget.org/packages/SoundFlow/1.4.1) is MIT licensed.
+[SoundFlow 1.4.2](https://www.nuget.org/packages/SoundFlow/1.4.2) is MIT licensed.
 Its NuGet package includes [miniaudio](https://miniaud.io/) native binaries for output.
 [NVorbis 0.10.5](https://www.nuget.org/packages/NVorbis/0.10.5) is an MIT-licensed
 managed Vorbis decoder. `AudioPlayer.cs` contains the output adapter, streaming
@@ -118,12 +118,16 @@ during 16:00–23:59; this is an app scheduling convention, not a religious time
 Adding a custom text replaces the bundled rotation until custom entries are cleared.
 Each entry cites a Sahih hadith in `Data/default-adhkar.json`; the app does not count recitations.
 
-Enable reading reminders, choose a reading duration (5–600 seconds) and a pause
-(1–1440 minutes). After the first pause:
+Enable reading reminders and choose a display duration (5–600 seconds, initially
+5) and a pause (1–1440 minutes). After the first pause:
 
 1. One text appears in a small, scrollable, non-activating window.
 2. It closes after the reading duration (or when dismissed early).
 3. A full pause follows, then the next entry appears. The list wraps.
+
+A colored character moves at eight characters per second by default. Change
+the pace under Settings > General. For longer readings, increase the time the
+popup stays open.
 
 Disable or edit settings to close any current reading and restart the cycle.
 Sleep/resume never queues missed windows. Prayer reminders dismiss the reading

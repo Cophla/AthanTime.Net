@@ -50,6 +50,28 @@ Remove-My-Settings helper; run it before removing the app only if you want to re
 your preferences. On macOS/Linux use your normal user, without sudo. Other users
 and custom recordings are preserved. See the helper's confirmation before proceeding.
 
+MOVEMENT BREAKS
+
+Open Settings > Movement breaks to enable optional reminders to step away from
+the screen. Choose how long to wait after each reminder and how long it stays
+visible. Done starts the next wait; Snooze postpones it by five minutes.
+Test tries an idea without enabling automatic reminders.
+
+The supplied ideas support all eight app languages. You can add your own ideas
+and enter translations yourself, offline. Move only as comfortably as you can;
+stop if you feel pain or dizziness. These are gentle prompts, not medical advice.
+
+Movement settings and ideas are stored in your own local movement-reminders.db.
+Open Settings > General to export or import a backup. Choose All settings or a
+section. Choose Movement breaks to back up just its timing, ideas and
+translations. Import asks for confirmation. Review custom text before sharing.
+General also lets you adjust the reading highlight speed for both text popups.
+
+To start over, use Restore factory settings in Settings > General. After
+confirmation, Athan Time clears your local preferences and closes. Open it again
+for first-run setup. Your recordings and exported backups are kept.
+Explicit settings removal deletes the movement database too; normal uninstall keeps it.
+
 BETA AND SUPPORT
 
 This is beta software. Check About for the version. Windows packages are unsigned;

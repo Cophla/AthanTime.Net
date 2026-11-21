@@ -47,8 +47,10 @@ returns a failure if any tracked export is missing or differs, without writing.
 To stage an export before replacing the tracked icons, append
 `-- --output artifacts/icon-preview` instead.
 
-The tool uses the project's SkiaSharp version and bundled Windows/macOS/Linux
-native libraries. It supports square, single-path SVGs at origin 0,0 with explicit
+The tool uses SkiaSharp 4.157.0 and bundled Windows/macOS/Linux native libraries.
+Beta.16 regenerated the PNG/ICO exports from the existing SVGs with that version.
+The app's Avalonia renderer has its own SkiaSharp dependency.
+The tool supports square, single-path SVGs at origin 0,0 with explicit
 fill/stroke colors, evenodd fill and round joins. It rejects CSS, transforms and
 other element types instead of silently ignoring them. Keep editor output in
 that simple path format. The tool needs no System.Drawing, Inkscape, separate SVG

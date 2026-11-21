@@ -19,6 +19,50 @@ namespace AthanTime.Tests;
 public sealed class WindowAppearanceTests(UiTestHost ui, ViewModelHarness harness, ILogger<MainWindow> logger)
 {
     [Fact]
+    public Task CitySearchPlaceholderAndInputAreCenteredAndInset() => ui.Run(() =>
+    {
+        using var vm = harness.Create();
+        var main = new MainWindow(vm, logger) { ForceClose = true };
+        try
+        {
+            main.Show();
+            main.FindControl<TabControl>("MainPages")!.SelectedIndex = 1;
+            main.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 1;
+            var input = main.FindControl<TextBox>("LocationSearchInput")!;
+            foreach (var language in vm.Languages)
+            foreach (var dark in new[] { false, true })
+            {
+                vm.SelectedLanguage = language;
+                vm.UseDarkMode = dark;
+                input.Text = "";
+                Dispatcher.UIThread.RunJobs();
+                main.UpdateLayout();
+                var placeholder = input.GetVisualDescendants().OfType<TextBlock>()
+                    .Single(text => text.IsEffectivelyVisible && text.Text == vm.SearchPlaceLabel);
+                Assert.Equal(vm.FlowDirection, input.FlowDirection);
+                Assert.IsAssignableFrom<ISolidColorBrush>(input.PlaceholderForeground);
+                AssertSearchTextBounds(input, placeholder);
+
+                input.Text = "A";
+                Dispatcher.UIThread.RunJobs();
+                main.UpdateLayout();
+                var presenter = input.GetVisualDescendants().OfType<TextPresenter>().Single();
+                AssertSearchTextBounds(input, presenter);
+            }
+        }
+        finally { main.Close(); }
+    });
+
+    private static void AssertSearchTextBounds(TextBox input, Control text)
+    {
+        var first = text.TranslatePoint(default, input)!.Value;
+        var last = text.TranslatePoint(new Point(text.Bounds.Width, text.Bounds.Height), input)!.Value;
+        Assert.InRange(Math.Abs((first.Y + last.Y) / 2 - input.Bounds.Height / 2), 0, 1);
+        Assert.True(Math.Min(first.X, last.X) >= 10);
+        Assert.True(input.Bounds.Width - Math.Max(first.X, last.X) >= 10);
+    }
+
+    [Fact]
     public Task CheckboxCaptionsAlignWithIndicatorsInEveryLanguageAndTheme() => ui.Run(() =>
     {
         using var vm = harness.Create();
@@ -27,7 +71,7 @@ public sealed class WindowAppearanceTests(UiTestHost ui, ViewModelHarness harnes
         {
             main.Show();
             main.FindControl<TabControl>("MainPages")!.SelectedIndex = 1;
-            main.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 3;
+            main.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 0;
             foreach (var language in vm.Languages)
             foreach (var dark in new[] { false, true })
             {
@@ -230,7 +274,7 @@ public sealed class WindowAppearanceTests(UiTestHost ui, ViewModelHarness harnes
         try
         {
             main.FindControl<TabControl>("MainPages")!.SelectedIndex = 1;
-            main.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 3;
+            main.FindControl<TabControl>("SettingsPages")!.SelectedIndex = 0;
             Dispatcher.UIThread.RunJobs();
             foreach (var name in new[] { "ProjectPageButton", "ReleasesPageButton" })
                 Assert.True(main.FindControl<Button>(name)!.IsEffectivelyVisible);

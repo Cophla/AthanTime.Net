@@ -14,8 +14,87 @@ namespace AthanTime.Tests;
 /// <summary>Checks login registration, one-time minimized startup, tray restoration and explicit exit choices.</summary>
 [Collection("UI")]
 public sealed class ExitAndStartupUiTests(UiTestHost ui, ViewModelHarness harness,
-    ILogger<MainWindow> logger, ILogger<WindowPositionService> positionLogger, ILogger<App> appLogger)
+    ILogger<MainWindow> logger, ILogger<WindowPositionService> positionLogger, ILogger<App> appLogger,
+    SupportService support, ILogger<SettingsService> settingsLogger, ManualLocationService manual,
+    ILogger<UserProfileCleanup> cleanupLogger)
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public Task FactoryResetOnlyClosesAfterSuccessfulCleanup(bool confirmReset, bool blocked) => ui.Run(() =>
+    {
+        var folder = Directory.CreateTempSubdirectory("athan-reset-ui-");
+        using var vm = harness.Create();
+        using var logs = new FileLogSink(folder.FullName);
+        var startup = new FakeLoginStartupService();
+        var cleanup = new UserProfileCleanup(folder.FullName, startup, cleanupLogger);
+        var settingsPath = Path.Combine(folder.FullName, "settings.json");
+        var positionPath = Path.Combine(folder.FullName, "window-position.json");
+        var movementPath = Path.Combine(folder.FullName, "movement-reminders.db");
+        var recording = Path.Combine(folder.FullName, "recording.ogg");
+        var exported = Path.Combine(folder.FullName, "exported-backup.json");
+        var settings = new SettingsService(settingsLogger, manual, settingsPath,
+            firstRun => firstRun.LocationNeedsConfirmation = true);
+        var positions = new WindowPositionService(positionLogger, positionPath);
+        var movement = new MovementBreakRepository(movementPath,
+            Path.Combine(AppContext.BaseDirectory, "Data", "movement-breaks.json"));
+        startup.SetEnabled(true);
+        settings.Save(new() { UseDarkMode = true, LocationNeedsConfirmation = false });
+        if (blocked) Directory.CreateDirectory(settingsPath + ".tmp");
+        movement.Save(new() { Enabled = true, Practices = [] });
+        positions.Save(new WindowPosition(40, 40));
+        File.WriteAllText(recording, "keep");
+        File.WriteAllText(exported, "keep");
+        Directory.CreateDirectory(Path.Combine(folder.FullName, "Logs"));
+        var logPath = Path.Combine(folder.FullName, "Logs", "athan-20261120.log");
+        File.WriteAllText(logPath, "old");
+        logs.SetEnabled(true);
+        var window = new MainWindow(vm, logger, support, logs, positions, cleanup);
+        try
+        {
+            window.Show();
+            window.FindControl<TabControl>("MainPages")!.SelectedIndex = 1;
+            Dispatcher.UIThread.RunJobs();
+            window.FindControl<Button>("ResetProfileButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var dialog = Assert.Single(window.OwnedWindows);
+            Assert.Contains(dialog.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == vm["ResetProfileConfirm"]);
+            dialog.GetVisualDescendants().OfType<Button>()
+                .Single(button => Equals(button.Content, vm[confirmReset ? "ResetProfile" : "Cancel"]))
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+
+            if (blocked)
+            {
+                var failure = Assert.Single(window.OwnedWindows);
+                Assert.Contains(failure.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == vm["ResetProfileFailed"]);
+                failure.Close();
+                Dispatcher.UIThread.RunJobs();
+            }
+            var didReset = confirmReset && !blocked;
+            Assert.Equal(!didReset, window.IsVisible);
+            Assert.Equal(!didReset, startup.IsEnabled());
+            Assert.Equal(!didReset, logs.Enabled);
+            foreach (var path in new[] { settingsPath, settingsPath + ".bak", positionPath, movementPath, logPath })
+                Assert.Equal(!didReset, File.Exists(path));
+            Assert.Equal("keep", File.ReadAllText(recording));
+            Assert.Equal("keep", File.ReadAllText(exported));
+            var nextLaunch = settings.Load();
+            Assert.Equal(didReset, nextLaunch.LocationNeedsConfirmation);
+            Assert.Equal(!didReset, nextLaunch.UseDarkMode);
+            var nextMovement = movement.Load();
+            Assert.Equal(!didReset, nextMovement.Enabled);
+            Assert.Equal(didReset ? 8 : 0, nextMovement.Practices.Count);
+        }
+        finally
+        {
+            window.ForceClose = true;
+            window.Close();
+            logs.Dispose();
+            folder.Delete(true);
+        }
+    });
+
     /// <summary>Native move-loop messages must suppress both fitting and capturing intermediate coordinates.</summary>
     [Theory]
     [InlineData(false)]
@@ -355,9 +434,15 @@ public sealed class ExitAndStartupUiTests(UiTestHost ui, ViewModelHarness harnes
         try
         {
             window.PrepareStartupVisibility(minimized);
+            if (minimized && !(trayAvailable && closeToTray))
+            {
+                Assert.Equal(WindowState.Normal, window.WindowState);
+                Assert.False(window.ShowActivated);
+            }
             window.Show();
             Assert.Equal(!(minimized && trayAvailable && closeToTray), window.IsVisible);
             Assert.Equal(minimized ? WindowState.Minimized : WindowState.Normal, window.WindowState);
+            Assert.True(window.ShowActivated);
 
             // Opened fires on every Show after Hide, not only on the first application launch.
             for (int cycle = 0; cycle < 3; cycle++)

@@ -12,6 +12,7 @@
   "startMinimized": false,
   "startOnLogin": false,
   "closeToTray": true,
+  "readingHighlightSpeed": 8,
   "notificationsEnabled": true,
   "prayerAudioEnabled": true,
   "notificationPauseMinutes": 60,
@@ -33,5 +34,5 @@
   "savedLocations": [],
   "audioVolume": 80,
   "adhkar": { "enabled": false, "randomOrder": false, "intervalMinutes": 30, "audioFiles": ["bundled:takbeer"] },
-  "textAdhkar": { "enabled": false, "displaySeconds": 20, "pauseMinutes": 30, "texts": [] }
+  "textAdhkar": { "enabled": false, "displaySeconds": 5, "pauseMinutes": 30, "texts": [] }
 }

@@ -28,6 +28,7 @@ coverage.opencover.xml
 *.log
 AthanTime-logs*.zip
 AthanTime-settings*.json
+AthanTime-movement-breaks*.json
 
 # Local IDE state and publish profiles; canonical packaging lives in packaging/.
 .vs/
@@ -76,6 +77,16 @@ id_ed25519
 /settings.json.bak.tmp
 /window-position.json
 /window-position.json.tmp
+
+# Per-user movement ideas/settings accidentally copied into the checkout.
+/movement-reminders.db
+/movement-reminders.db-journal
+/movement-reminders.db-wal
+/movement-reminders.db-shm
+/movement-reminders.db.*.tmp
+/movement-reminders.db.*.tmp-journal
+/movement-reminders.db.*.tmp-wal
+/movement-reminders.db.*.tmp-shm
 
 # Local agent configuration/cache; AGENTS.md is the shared engineering guide.
 /.codex/

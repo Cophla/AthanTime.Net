@@ -10,6 +10,137 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
 {
     private readonly string _directory = Directory.CreateTempSubdirectory("athan-settings-tests-").FullName;
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FirstLaunchDoesNotThrowForAbsentProfileFiles(bool createProfileDirectory)
+    {
+        var profile = Path.Combine(_directory, "fresh");
+        if (createProfileDirectory) Directory.CreateDirectory(profile);
+        var settingsPath = Path.Combine(profile, "settings.json");
+        var positionPath = Path.Combine(profile, "window-position.json");
+        var settings = new SettingsService(logger, manual, settingsPath,
+            firstRun => firstRun.LocationNeedsConfirmation = true);
+        var position = new WindowPositionService(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WindowPositionService>.Instance, positionPath);
+        var observed = 0;
+        var thread = Environment.CurrentManagedThreadId;
+        EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> handler = (_, args) =>
+        {
+            if (Environment.CurrentManagedThreadId == thread &&
+                args.Exception is FileNotFoundException or DirectoryNotFoundException) observed++;
+        };
+        AppDomain.CurrentDomain.FirstChanceException += handler;
+        try
+        {
+            Assert.True(settings.Load().LocationNeedsConfirmation);
+            Assert.Equal("", settings.StatusKey);
+            Assert.Null(position.Load());
+        }
+        finally { AppDomain.CurrentDomain.FirstChanceException -= handler; }
+        Assert.Equal(0, observed);
+        Assert.Equal(createProfileDirectory, Directory.Exists(profile));
+        if (createProfileDirectory) Assert.Empty(Directory.EnumerateFileSystemEntries(profile));
+    }
+
+    [Fact]
+    public void DirectoryAtPrimaryPathIsAProfileErrorRatherThanFirstRun()
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        Directory.CreateDirectory(path);
+        var store = new SettingsService(logger, manual, path,
+            firstRun => firstRun.LocationNeedsConfirmation = true);
+        Assert.False(store.Load().LocationNeedsConfirmation);
+        Assert.Equal("SettingsLoadFailed", store.StatusKey);
+    }
+
+    [Theory]
+    [InlineData("General")]
+    [InlineData("All")]
+    public void ReadingSpeedRoundTripsAndOlderBackupsKeepTheCurrentSpeed(string section)
+    {
+        var store = new SettingsService(logger, manual, Path.Combine(_directory, "settings.json"));
+        var path = Path.Combine(_directory, "reading.json");
+        var settings = store.Load();
+        Assert.Equal(8, settings.ReadingHighlightSpeed);
+        settings.ReadingHighlightSpeed = 24;
+        store.Save(settings);
+        settings = store.Load();
+        Assert.Equal(20, settings.ReadingHighlightSpeed);
+        Assert.True(store.ExportBackup(settings, section == "All" ? new MovementBreakPreferences() : null, section, path));
+        var current = new AppSettings { ReadingHighlightSpeed = 11 };
+        Assert.Equal(20, store.ReadBackup(current, section, path)!.Settings.ReadingHighlightSpeed);
+
+        var older = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        older["Values"]!.AsObject().Remove(nameof(AppSettings.ReadingHighlightSpeed));
+        File.WriteAllText(path, older.ToJsonString());
+        Assert.Equal(11, store.ReadBackup(current, section, path)!.Settings.ReadingHighlightSpeed);
+    }
+
+    [Theory]
+    [InlineData("Location", "SavedLocations", "AudioVolume")]
+    [InlineData("PrayerClock", "Use24HourClock", "LocationId")]
+    [InlineData("AudioAdhkar", "AudioVolume", "UseDarkMode")]
+    [InlineData("PrayerReminders", "PrayerNotifications", "Adhkar")]
+    [InlineData("Adhkar", "Adhkar", "TextAdhkar")]
+    [InlineData("TextAdhkar", "TextAdhkar", "Adhkar")]
+    [InlineData("General", "UseDarkMode", "AudioVolume")]
+    public void SectionBackupsContainOnlyTheirOwnPreferences(string section, string included, string excluded)
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        var backup = Path.Combine(_directory, "section.json");
+        var store = new SettingsService(logger, manual, path);
+        var current = store.Load();
+        current.AudioVolume = 19;
+        current.TextAdhkar.DisplaySeconds = 27;
+        var source = store.Load();
+        source.UseDarkMode = true;
+        source.AudioVolume = 88;
+        source.TextAdhkar.DisplaySeconds = 5;
+        Assert.True(store.ExportBackup(source, null, section, backup));
+        using var json = JsonDocument.Parse(File.ReadAllText(backup));
+        var values = json.RootElement.GetProperty("Values");
+        Assert.True(values.TryGetProperty(included, out _));
+        Assert.False(values.TryGetProperty(excluded, out _));
+        Assert.Null(store.ReadBackup(current, "All", backup));
+        var restored = Assert.IsType<SettingsBackup>(store.ReadBackup(current, section, backup)).Settings;
+        Assert.Equal(section == "AudioAdhkar" ? 88 : 19, restored.AudioVolume);
+        Assert.Equal(section is "AudioAdhkar" or "TextAdhkar" ? 5 : 27, restored.TextAdhkar.DisplaySeconds);
+        Assert.Equal(section == "General", restored.UseDarkMode);
+        if (section is "PrayerReminders" or "Adhkar" or "TextAdhkar")
+        {
+            var olderAudio = Assert.IsType<SettingsBackup>(store.ReadBackup(current, "AudioAdhkar", backup));
+            Assert.Equal(section, olderAudio.Section);
+            Assert.Equal(19, olderAudio.Settings.AudioVolume);
+            Assert.Equal(section == "TextAdhkar" ? 5 : 27, olderAudio.Settings.TextAdhkar.DisplaySeconds);
+        }
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void WholeBackupCarriesMovementAndCanStillReadLegacySettingsJson()
+    {
+        var store = new SettingsService(logger, manual, Path.Combine(_directory, "settings.json"));
+        var backup = Path.Combine(_directory, "backup.json");
+        var settings = store.Load();
+        Assert.Equal(5, settings.TextAdhkar.DisplaySeconds);
+        settings.StartOnLogin = true;
+        settings.TextAdhkar.Texts = ["My text"];
+        var movement = new MovementBreakPreferences
+        {
+            Enabled = true,
+            Practices = [new("custom", new Dictionary<string, string> { ["fr"] = "Bouger", ["en"] = "Move" })]
+        };
+        Assert.True(store.ExportBackup(settings, movement, "All", backup));
+        var restored = Assert.IsType<SettingsBackup>(store.ReadBackup(new(), "All", backup));
+        Assert.False(restored.Settings.StartOnLogin);
+        Assert.Equal("My text", Assert.Single(restored.Settings.TextAdhkar.Texts));
+        Assert.Equal(20, restored.Movement!.DisplaySeconds);
+        Assert.Equal("Bouger", Assert.Single(restored.Movement.Practices).GetText("fr"));
+        File.WriteAllText(backup, JsonSerializer.Serialize(settings));
+        Assert.Null(Assert.IsType<SettingsBackup>(store.ReadBackup(new(), "All", backup)).Movement);
+    }
+
     [Fact]
     public void RemovedBundledTahmidIsFilteredWhileCustomRecordingsAreRetained()
     {
@@ -237,7 +368,7 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
     [Fact]
     public void FailedSaveAndExport_AreVisibleAndDoNotCorruptExistingProfile()
     {
-        var blockedPath = Path.Combine(_directory, "blocked");
+        var blockedPath = Path.Combine(_directory, "blocked.json");
         Directory.CreateDirectory(blockedPath);
         var store = new SettingsService(logger, manual, blockedPath);
         store.Save(new());
@@ -249,10 +380,10 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         store = new SettingsService(logger, manual, goodPath);
         store.Save(new());
         var original = File.ReadAllText(goodPath);
-        Assert.False(store.Export(new() { Language = "ar" }, goodPath));
+        Assert.False(ExportWholeBackup(store, new() { Language = "ar" }, goodPath));
         Assert.Equal("SettingsExportFailed", store.StatusKey);
         Assert.Equal(original, File.ReadAllText(goodPath));
-        Assert.False(store.Export(new(), blockedPath));
+        Assert.False(ExportWholeBackup(store, new(), blockedPath));
         Assert.Equal("SettingsExportFailed", store.StatusKey);
         Assert.False(File.Exists(blockedPath + ".tmp"));
     }
@@ -271,9 +402,9 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         settings.Language = "AR";
         settings.MinuteAdjustments[Prayer.Maghrib] = 5;
 
-        Assert.True(store.Export(settings, exportedPath));
+        Assert.True(ExportWholeBackup(store, settings, exportedPath));
         Assert.Equal("SettingsExported", store.StatusKey);
-        var imported = store.ReadImport(exportedPath);
+        var imported = ReadWholeBackup(store, exportedPath);
 
         Assert.NotNull(imported);
         Assert.Equal("AR", imported.Language);
@@ -300,7 +431,7 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         var original = File.ReadAllText(path);
         File.WriteAllText(importPath, json);
 
-        Assert.Null(store.ReadImport(importPath));
+        Assert.Null(ReadWholeBackup(store, importPath));
 
         Assert.Equal("SettingsImportFailed", store.StatusKey);
         Assert.Equal(original, File.ReadAllText(path));
@@ -325,7 +456,7 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         File.WriteAllText(path, json);
         var store = new SettingsService(logger, manual, Path.Combine(_directory, "settings.json"));
 
-        Assert.Null(store.ReadImport(path));
+        Assert.Null(ReadWholeBackup(store, path));
         Assert.Equal("SettingsImportFailed", store.StatusKey);
         Assert.False(File.Exists(Path.Combine(_directory, "settings.json")));
     }
@@ -337,7 +468,7 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         var path = Path.Combine(_directory, "import.json");
         File.WriteAllText(path, """{"LOCATIONID":"geonames-276781","minuteAdjustments":{"maghrib":5}}""");
         var store = new SettingsService(logger, manual, Path.Combine(_directory, "settings.json"));
-        var settings = store.ReadImport(path);
+        var settings = ReadWholeBackup(store, path);
 
         Assert.NotNull(settings);
         Assert.Equal(5, settings.SchemaVersion);
@@ -355,17 +486,17 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         store.Save(new());
         Assert.Equal("SettingsSaveFailed", store.StatusKey);
 
-        Assert.True(store.Export(new(), exportPath));
+        Assert.True(ExportWholeBackup(store, new(), exportPath));
         Assert.Equal("SettingsSaveFailed", store.StatusKey);
-        Assert.NotNull(store.ReadImport(exportPath));
+        Assert.NotNull(ReadWholeBackup(store, exportPath));
         Assert.Equal("SettingsSaveFailed", store.StatusKey);
-        Assert.Null(store.ReadImport(Path.Combine(_directory, "missing.json")));
+        Assert.Null(ReadWholeBackup(store, Path.Combine(_directory, "missing.json")));
         Assert.Equal("SettingsSaveFailed", store.StatusKey);
 
         Directory.Delete(blockedPath);
         store.Save(new());
         Assert.Equal("SettingsImportFailed", store.StatusKey);
-        Assert.NotNull(store.ReadImport(exportPath));
+        Assert.NotNull(ReadWholeBackup(store, exportPath));
         Assert.Equal("", store.StatusKey);
     }
 
@@ -380,8 +511,8 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         File.WriteAllText(path, "{broken");
         var recovered = store.Load();
 
-        Assert.True(store.Export(recovered, exported));
-        Assert.NotNull(store.ReadImport(exported));
+        Assert.True(ExportWholeBackup(store, recovered, exported));
+        Assert.NotNull(ReadWholeBackup(store, exported));
         store.Save(recovered);
         Assert.Equal("SettingsRecovered", store.StatusKey);
         store.Load();
@@ -416,7 +547,7 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
         var path = Path.Combine(_directory, "future-export.json");
         var store = new SettingsService(logger, manual, Path.Combine(_directory, "settings.json"));
 
-        Assert.False(store.Export(new() { SchemaVersion = 999 }, path));
+        Assert.False(ExportWholeBackup(store, new() { SchemaVersion = 999 }, path));
         Assert.Equal("SettingsExportFailed", store.StatusKey);
         Assert.False(File.Exists(path));
     }
@@ -464,7 +595,7 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
             RecentPrayerAlerts = Enumerable.Range(0, 150).Select(index => $"alert-{index}").Concat(["ALERT-149", ""]).ToArray()
         });
         File.WriteAllText(path, json);
-        var settings = new SettingsService(logger, manual, Path.Combine(_directory, "active.json")).ReadImport(path);
+        var settings = ReadWholeBackup(new SettingsService(logger, manual, Path.Combine(_directory, "active.json")), path);
 
         Assert.NotNull(settings);
         Assert.Equal(6, settings.PrayerNotifications.Count);
@@ -509,4 +640,11 @@ public sealed class SettingsPersistenceTests(ILogger<SettingsService> logger, Ma
 
     /// <inheritdoc />
     public void Dispose() => Directory.Delete(_directory, recursive: true);
+
+    private static bool ExportWholeBackup(SettingsService store, AppSettings settings, string path) =>
+        store.ExportBackup(settings, new MovementBreakPreferences(), "All", path);
+
+    private static AppSettings? ReadWholeBackup(SettingsService store, string path) =>
+        store.ReadBackup(new AppSettings(), "All", path)?.Settings;
+
 }

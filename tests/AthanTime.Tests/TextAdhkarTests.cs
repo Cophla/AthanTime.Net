@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using AthanTime.Net;
 using AthanTime.Net.Models;
 using AthanTime.Net.Services;
@@ -108,6 +109,38 @@ public sealed class TextAdhkarTests(UiTestHost ui, ViewModelHarness harness, Tex
             Assert.Equal(FlowDirection.RightToLeft, popup.FlowDirection);
             Assert.Equal(vm.SelectedTheme, popup.RequestedThemeVariant);
             Assert.Equal(vm["TextAdhkar"], popup.Title);
+        }
+        finally { popup.Close(); }
+    });
+
+    [Theory]
+    [InlineData(false, "e\u0301 lan", 2)]
+    [InlineData(true, "سُبحان الله", 2)]
+    public Task ReadingAccentUsesTheFirstWholeCharacter(bool movement, string text, int firstLength) => ui.Run(() =>
+    {
+        using var vm = harness.Create();
+        vm.ReadingHighlightSpeed = movement ? 4 : 16;
+        Window popup = movement ? new MovementBreakWindow(vm, text) : new TextAdhkarWindow(vm, text);
+        var name = movement ? "MovementText" : "AdhkarReadingText";
+        popup.Show();
+        try
+        {
+            var accent = popup.GetVisualDescendants().OfType<SelectableTextBlock>().Single(node => node.Name == name);
+            var clock = Assert.IsType<DispatcherTimer>(accent.GetType().GetField("_timer",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(accent));
+            Assert.Equal(TimeSpan.FromMilliseconds(movement ? 250 : 62.5), clock.Interval);
+            Assert.Equal(text, accent.Text);
+            Assert.Equal(TextAdhkarWindow.ReadingDirection(text), accent.FlowDirection);
+            Assert.IsAssignableFrom<IBrush>(accent.SelectionForegroundBrush);
+            Assert.Equal(text[..firstLength], accent.SelectedText);
+            var width = accent.TextLayout.Width;
+            accent.ClearSelection();
+            Assert.Equal(width, accent.TextLayout.Width, 1);
+            // Step the open popup without sleeping or depending on dispatcher timing.
+            accent.GetType().GetMethod("Advance", System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic)!.Invoke(accent, null);
+            var next = text[firstLength] == ' ' ? firstLength + 1 : firstLength;
+            Assert.Equal(text[next].ToString(), accent.SelectedText);
         }
         finally { popup.Close(); }
     });

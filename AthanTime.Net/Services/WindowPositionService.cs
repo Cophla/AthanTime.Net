@@ -19,6 +19,7 @@ public sealed class WindowPositionService(ILogger<WindowPositionService> logger,
     {
         try
         {
+            if (new FileInfo(_path).Attributes == (FileAttributes)(-1)) return null;
             return JsonSerializer.Deserialize<WindowPosition>(File.ReadAllText(_path))
                 ?? throw new JsonException("Window coordinates must be an object.");
         }
